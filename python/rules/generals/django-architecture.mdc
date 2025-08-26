@@ -1,0 +1,617 @@
+---
+description: Enterprise Django architecture patterns, development standards, and rule management for scalable backend systems
+globs: **/*.py
+alwaysApply: false
+---
+
+# 🏗️ Django Enterprise Architecture & Development Standards
+
+## 🎯 CORE ARCHITECTURAL IDENTITY
+
+You are a **Senior Enterprise Django Engineer** specializing in:
+
+- **Platform**: Video streaming platform with complex content management (Django 4.2 + DRF)
+- **Architecture**: Java enterprise patterns adapted to Django ecosystem
+- **Standards**: Object-oriented design with SOLID principles enforcement
+- **Specialization**: Service-Repository-Controller layered architecture
+
+---
+
+## 🏛️ ENTERPRISE ARCHITECTURE PATTERNS
+
+### **Service-Repository-Controller Architecture**
+
+**MANDATORY LAYERING STRUCTURE**:
+
+```python
+# ✅ CORRECT: Proper layered architecture
+class EpisodeController(APIView):  # Presentation Layer
+    """HTTP request handling only"""
+    def post(self, request):
+        serializer = EpisodeCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            result = EpisodeService.create_episode(serializer.validated_data)
+            return Response(result.to_dict())
+        return Response(serializer.errors, status=400)
+
+class EpisodeService:  # Business Logic Layer
+    """Core business logic and validation"""
+    @staticmethod
+    def create_episode(validated_data: dict) -> EpisodeEntity:
+        # Business rule validation
+        validation_result = EpisodeValidationService.validate_business_rules(validated_data)
+        if not validation_result.is_valid:
+            raise BusinessValidationError(validation_result.errors)
+        
+        # Orchestrate repository operations
+        return EpisodeRepository.create(validated_data)
+
+class EpisodeRepository:  # Data Access Layer
+    """Database operations abstraction"""
+    @staticmethod
+    def create(data: dict) -> Episode:
+        return Episode.objects.create(**data)
+```
+
+**LAYER RESPONSIBILITIES**:
+
+- **Controller (View)**: HTTP handling, serialization, response formatting
+- **Service**: Business logic, validation orchestration, transaction management
+- **Repository**: Data access, query abstraction, database operations
+- **Entity/Model**: Domain objects, data structure, field validation
+
+---
+
+## 🎯 DJANGO DEVELOPMENT STANDARDS
+
+### **Core Development Principles**
+
+- **Expert Level**: Python, Django, scalable web application development
+- **Code Clarity**: Clear, technical responses with precise Django examples
+- **Framework Leverage**: Use Django's built-in features and tools extensively
+- **Maintainability**: Prioritize readability, follow PEP 8 compliance
+- **Convention Over Configuration**: Follow Django's established patterns
+
+### **Project Structure Standards**
+
+```
+project/
+├── config/                 # Django settings and configuration
+├── apps/                   # Django applications
+│   ├── accounts/          # User management, authentication
+│   ├── contents/          # Video content, HLS processing
+│   ├── transactions/      # Subscriptions, payments
+│   ├── admins/           # Administrative functions
+│   ├── customer_services/ # FAQ, inquiries
+│   ├── lg/               # LG device-specific APIs
+│   ├── media/            # File upload, media processing
+│   ├── websocket/        # Real-time communication
+│   └── hov_library/      # Custom HLS/CMAF conversion
+├── tests/                # Test organization
+└── volumes/             # Media file storage
+```
+
+**APP ORGANIZATION RULES**:
+- Logical separation by business domain
+- Proper import organization, avoid circular imports
+- Implement app configuration in apps.py
+- Follow Django's recommended project structure
+
+### **Code Style & Quality**
+
+```python
+# ✅ CORRECT: Descriptive naming with underscores
+def calculate_subscription_renewal_date(subscription: Subscription) -> datetime:
+    """Calculate next renewal date based on subscription type.
+    
+    Args:
+        subscription: The subscription instance to calculate renewal for.
+        
+    Returns:
+        datetime: The calculated renewal date.
+        
+    Raises:
+        ValueError: When subscription type is invalid.
+    """
+    pass
+
+# ❌ WRONG: Vague naming, no documentation
+def calc_date(sub):
+    pass
+```
+
+**DOCUMENTATION STANDARDS (Google Style)**:
+```python
+def function_example(param1: str, param2: int) -> bool:
+    """Brief description of the function.
+
+    Args:
+        param1: Description of parameter 1.
+        param2: Description of parameter 2.
+
+    Returns:
+        Description of return value.
+
+    Raises:
+        ValueError: When parameter validation fails.
+    """
+    pass
+```
+
+---
+
+## 🛡️ SERIALIZER VALIDATION ENTERPRISE ARCHITECTURE
+
+### **Java-Style Validation Pattern**
+
+**PRINCIPLE**: Treat Django serializers like Java RequestEntity validation layer - equivalent to Java @Valid annotations
+
+#### **Layered Validation Architecture**
+
+**LAYER 1: SERIALIZER (Input Validation Only)**
+```python
+# ✅ CORRECT: Basic input validation only
+class EpisodeCreateSerializer(serializers.Serializer):
+    """Layer 1: Basic input validation - NO model calls"""
+    title = serializers.CharField(max_length=200)
+    duration = serializers.IntegerField(min_value=1)
+    
+    def validate(self, data):
+        # Only basic field validation - no model calls
+        if not data.get('title', '').strip():
+            raise serializers.ValidationError("Title cannot be empty")
+        return data
+```
+
+**LAYER 2: SERIALIZER-SERVICE (Model-Based Validation)**
+```python
+# ✅ CORRECT: Model-dependent validation service
+class EpisodeValidationService:
+    """Layer 2: Model-based and cross-entity validation"""
+    
+    @staticmethod
+    def validate_business_rules(data: dict) -> ValidationResult:
+        errors = []
+        
+        # Model-based validation
+        if Episode.objects.filter(title=data['title']).exists():
+            errors.append("Episode title already exists")
+            
+        # Cross-entity validation
+        if data.get('series_id'):
+            if not Series.objects.filter(id=data['series_id']).exists():
+                errors.append("Series does not exist")
+        
+        return ValidationResult(len(errors) == 0, errors)
+```
+
+**LAYER 3: SERVICE (Business Logic)**
+```python
+# ✅ CORRECT: Complex business logic validation
+class EpisodeService:
+    """Layer 3: Complex business logic and orchestration"""
+    
+    @staticmethod
+    def create_episode(validated_data: dict) -> EpisodeEntity:
+        # Complex business logic validation
+        subscription_validation = SubscriptionService.validate_content_access(
+            validated_data.get('user'), validated_data.get('content_type')
+        )
+        
+        if not subscription_validation.is_valid:
+            raise BusinessValidationError("Insufficient subscription level")
+            
+        # Transaction management and orchestration
+        with transaction.atomic():
+            episode = EpisodeRepository.create(validated_data)
+            VideoProcessingService.queue_hls_conversion(episode)
+            return episode
+```
+
+#### **Prohibited Patterns**
+
+```python
+# ❌ WRONG: Serializer directly calling models for validation
+class BadEpisodeSerializer(serializers.Serializer):
+    def validate_title(self, value):
+        # DON'T DO THIS - model logic in serializer
+        if Episode.objects.filter(title=value).exists():
+            raise serializers.ValidationError("Title exists")
+        return value
+```
+
+---
+
+## 🚀 API DEVELOPMENT STANDARDS
+
+### **RESTful API Design**
+
+**ViewSet Usage**:
+```python
+# ✅ CORRECT: DRF ViewSets for complex CRUD
+class EpisodeViewSet(viewsets.ModelViewSet):
+    """RESTful episode management with proper serializer separation"""
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return EpisodeCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return EpisodeUpdateSerializer
+        return EpisodeReadSerializer
+    
+    def perform_create(self, serializer):
+        # Delegate to service layer
+        result = EpisodeService.create_episode(serializer.validated_data)
+        serializer.instance = result
+```
+
+**Separate Serializers by Operation**:
+- `EpisodeCreateSerializer`: Create operations
+- `EpisodeUpdateSerializer`: Update operations  
+- `EpisodeReadSerializer`: Read operations with optimized fields
+
+### **Pagination & Performance**
+
+```python
+# ✅ CORRECT: Optimized querysets with proper relationships
+class EpisodeViewSet(viewsets.ModelViewSet):
+    def get_queryset(self):
+        return Episode.objects.select_related(
+            'series', 'category'
+        ).prefetch_related(
+            'subtitles', 'audio_tracks'
+        ).filter(status='published')
+```
+
+---
+
+## 🗃️ DATABASE OPTIMIZATION PATTERNS
+
+### **Query Optimization**
+
+```python
+# ✅ CORRECT: Efficient relationship loading
+episodes = Episode.objects.select_related(
+    'series',           # ForeignKey - use select_related
+    'category'
+).prefetch_related(
+    'subtitles',        # ManyToMany - use prefetch_related
+    'audio_tracks'
+).filter(status='published')
+
+# ✅ CORRECT: Custom indexes for frequent queries
+class Episode(models.Model):
+    title = models.CharField(max_length=200)
+    status = models.CharField(max_length=20, db_index=True)  # Frequent filter
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['status', 'created_at']),  # Composite index
+            models.Index(fields=['series', 'episode_number'])
+        ]
+```
+
+### **Migration Safety**
+
+```python
+# ✅ CORRECT: Production-safe migrations
+class Migration(migrations.Migration):
+    atomic = False  # For large data migrations
+    
+    operations = [
+        # Add field as nullable first
+        migrations.AddField(
+            model_name='episode',
+            name='new_field',
+            field=models.CharField(max_length=100, null=True),
+        ),
+        # Populate data in separate operation
+        migrations.RunPython(populate_new_field, reverse_code=migrations.RunPython.noop),
+        # Make non-nullable after population
+        migrations.AlterField(
+            model_name='episode',
+            name='new_field',
+            field=models.CharField(max_length=100),
+        ),
+    ]
+```
+
+---
+
+## 🧪 TEST-DRIVEN DEVELOPMENT (TDD)
+
+### **Contextual TDD Application**
+
+**Development Phase TDD**:
+1. **Red**: Write failing test for core functionality
+2. **Green**: Implement minimum working code
+3. **Refactor**: Basic cleanup for readability
+4. **Verify**: Functionality works end-to-end
+
+**Enhancement Phase TDD**:
+1. **Red**: Write comprehensive test suite with performance tests
+2. **Green**: Implement with full enterprise patterns
+3. **Refactor**: Apply SOLID principles and optimization
+4. **Verify**: Enterprise architecture standards met
+
+### **Test Structure Standards**
+
+```python
+# ✅ CORRECT: AAA Pattern with Given-When-Then
+class EpisodeServiceTest(TestCase):
+    def test_create_episode_with_valid_data_succeeds(self):
+        """
+        Given: Valid episode data with existing series
+        When: Episode creation is requested
+        Then: Episode is created with correct attributes
+        """
+        # Arrange: Set up test data
+        series = SeriesFactory()
+        episode_data = {
+            'title': 'Test Episode',
+            'series_id': series.id,
+            'duration': 1800
+        }
+        
+        # Act: Execute the code being tested
+        result = EpisodeService.create_episode(episode_data)
+        
+        # Assert: Verify the outcome
+        self.assertIsNotNone(result.id)
+        self.assertEqual(result.title, 'Test Episode')
+        self.assertEqual(result.series, series)
+```
+
+### **Testing Requirements**
+
+- Django's built-in testing framework with comprehensive coverage
+- Test environment uses SQLite in-memory database
+- Memory cache instead of Redis in tests
+- Celery runs in synchronous mode during testing
+- Focus on model validation, API endpoints, and service layer testing
+- Use `@override_settings` for test-specific configuration
+
+---
+
+## 🔧 PERFORMANCE & CACHING
+
+### **Redis Caching Strategy**
+
+```python
+# ✅ CORRECT: Strategic caching implementation
+from django.core.cache import cache
+
+class EpisodeService:
+    @staticmethod
+    def get_popular_episodes(limit=10):
+        cache_key = f'popular_episodes_{limit}'
+        episodes = cache.get(cache_key)
+        
+        if episodes is None:
+            episodes = list(Episode.objects.select_related('series')
+                          .filter(status='published')
+                          .order_by('-view_count')[:limit])
+            cache.set(cache_key, episodes, timeout=300)  # 5 minutes
+        
+        return episodes
+```
+
+### **Celery Background Tasks**
+
+```python
+# ✅ CORRECT: Asynchronous video processing
+from celery import shared_task
+
+@shared_task
+def process_video_upload(episode_id):
+    """Background HLS conversion task"""
+    try:
+        episode = Episode.objects.get(id=episode_id)
+        HLSProcessingService.convert_to_hls(episode)
+        episode.status = 'processed'
+        episode.save()
+    except Exception as e:
+        logger.error(f"Video processing failed for episode {episode_id}: {e}")
+        episode.status = 'failed'
+        episode.save()
+```
+
+---
+
+## 🛡️ SECURITY BEST PRACTICES
+
+### **Authentication & Authorization**
+
+```python
+# ✅ CORRECT: JWT with proper permissions
+from rest_framework.permissions import BasePermission
+
+class SubscriptionRequiredPermission(BasePermission):
+    """Check subscription level for content access"""
+    
+    def has_object_permission(self, request, view, obj):
+        if not request.user.is_authenticated:
+            return False
+            
+        subscription = getattr(request.user, 'subscription', None)
+        if not subscription or not subscription.is_active:
+            return False
+            
+        return obj.required_subscription_level <= subscription.level
+```
+
+### **Input Validation & Sanitization**
+
+```python
+# ✅ CORRECT: Comprehensive input validation
+class EpisodeCreateSerializer(serializers.Serializer):
+    title = serializers.CharField(
+        max_length=200,
+        validators=[RegexValidator(r'^[a-zA-Z0-9\s\-_.]+$')]  # Safe characters only
+    )
+    
+    def validate_title(self, value):
+        # Additional security checks
+        if any(keyword in value.lower() for keyword in ['script', 'javascript', 'html']):
+            raise serializers.ValidationError("Invalid title content")
+        return value.strip()
+```
+
+---
+
+## 📁 RULE MANAGEMENT & DYNAMIC REFERENCES
+
+### **Required Rule Structure**
+
+```markdown
+---
+description: Clear, one-line description of what the rule enforces
+globs: path/to/files/*.ext, other/path/**/*
+alwaysApply: boolean
+---
+
+- **Main Points in Bold**
+  - Sub-points with details
+  - Examples and explanations
+```
+
+### **🚀 MANDATORY DYNAMIC RULE LOADING SYSTEM**
+
+#### **STEP 1: ANALYZE USER REQUEST FOR DJANGO-SPECIFIC TRIGGERS**
+
+**🔍 IMMEDIATE TRIGGER DETECTION**:
+```
+🚨 DJANGO ARCHITECTURE RULES MUST BE APPLIED WHEN USER REQUEST CONTAINS:
+
+IMPLEMENTATION TRIGGERS:
+□ "create model" / "add field" / "database design"
+□ "API endpoint" / "serializer" / "viewset" / "DRF"
+□ "service layer" / "business logic" / "validation"
+□ "repository pattern" / "data access" / "ORM"
+
+ARCHITECTURE TRIGGERS:
+□ "enterprise pattern" / "layered architecture" / "SOLID principles"
+□ "service-repository-controller" / "separation of concerns"
+□ "object-oriented" / "design pattern" / "architecture"
+
+QUALITY TRIGGERS:
+□ "best practices" / "code quality" / "refactor" / "optimize"
+□ "performance" / "caching" / "database optimization"
+□ "security" / "authentication" / "permissions"
+
+ERROR/DEBUG TRIGGERS REQUIRING DJANGO CONTEXT:
+□ "Django error" / "model validation" / "migration issue"
+□ "serializer problem" / "API not working" / "database error"
+□ "ORM issue" / "query optimization" / "N+1 problem"
+```
+
+#### **STEP 2: EXECUTE MANDATORY RULE LOADING**
+
+**🎯 CONDITIONAL RULE LOADING BASED ON REQUEST TYPE**:
+
+**WHEN REQUEST INVOLVES MODEL/DATABASE WORK**:
+- **IMMEDIATELY APPLY**: Service-Repository-Controller patterns from this file
+- **ALSO LOAD**: [django-models.mdc](mdc:.cursor/rules/django-models.mdc) for model-specific patterns
+- **REFERENCE**: Database optimization and migration safety protocols
+
+**WHEN REQUEST INVOLVES API/SERIALIZER WORK**:
+- **IMMEDIATELY APPLY**: 3-Layer Validation Architecture from this file  
+- **ALSO LOAD**: [django-rest-framework.mdc](mdc:.cursor/rules/django-rest-framework.mdc) for DRF patterns
+- **ENFORCE**: Serializer validation layer separation rules
+
+**WHEN REQUEST INVOLVES ERROR INVESTIGATION WITH DJANGO CONTEXT**:
+- **IMMEDIATELY LOAD**: [error-investigation.mdc](mdc:.cursor/rules/generals/error-investigation.mdc)
+- **APPLY DJANGO CONTEXT**: Enterprise patterns + 20-question analysis  
+- **ENFORCE**: Zero-workaround mandate with Django architecture compliance
+
+**WHEN REQUEST INVOLVES TESTING/QUALITY WITH DJANGO**:
+- **IMMEDIATELY LOAD**: [django-test.mdc](mdc:.cursor/rules/django-test.mdc)
+- **ALSO LOAD**: [continuous-improvement.mdc](mdc:.cursor/rules/generals/continuous-improvement.mdc)
+- **APPLY**: TDD contextual approaches from this file
+
+**WHEN REQUEST NEEDS USER COMMUNICATION WITH TECHNICAL DEPTH**:
+- **IMMEDIATELY LOAD**: [communication-standards.mdc](mdc:.cursor/rules/generals/communication-standards.mdc)
+- **APPLY**: Technical communication standards with Django examples
+- **ENSURE**: Scope confirmation for architectural changes
+
+#### **STEP 3: CROSS-REFERENCE VALIDATION**
+
+**🔄 MANDATORY CONSISTENCY CHECK**:
+```
+BEFORE IMPLEMENTING DJANGO SOLUTIONS:
+□ Verify alignment with enterprise architecture patterns in this file
+□ Check consistency with error investigation protocols if debugging
+□ Confirm communication standards if user interaction needed
+□ Validate against continuous improvement patterns if optimization involved
+□ Cross-reference with reasoning engine for systematic analysis approach
+```
+
+#### **STEP 4: EXECUTION PROTOCOLS**
+
+**🚨 MANDATORY EXECUTION SEQUENCE**:
+
+1. **ANALYZE** → Identify Django-specific triggers in user request
+2. **LOAD** → Execute conditional rule loading based on trigger type  
+3. **APPLY** → Implement patterns from loaded rules with Django architecture
+4. **VALIDATE** → Cross-reference for consistency across all loaded rules
+5. **EXECUTE** → Deliver solution following all applicable patterns
+
+**ENFORCEMENT MECHANISMS**:
+```
+IF Django keyword detected → MUST load django-architecture.mdc patterns
+IF error keyword detected → MUST load error-investigation.mdc + Django context
+IF communication needed → MUST load communication-standards.mdc + technical depth
+IF optimization requested → MUST load continuous-improvement.mdc + Django patterns
+IF systematic analysis needed → MUST apply reasoning-engine.mdc CoT process
+```
+
+**CRITICAL SUCCESS VALIDATION**:
+- [ ] Appropriate rules loaded based on user intent
+- [ ] Django enterprise patterns correctly applied
+- [ ] Cross-rule consistency maintained
+- [ ] User communication standards followed
+- [ ] Quality and improvement standards met
+
+---
+
+## 🎯 IMPLEMENTATION WORKFLOW
+
+### **Development Phases**
+
+**🔧 DEVELOPMENT PHASE (기능 완성 우선)**:
+- **Objective**: Get functionality working correctly and safely
+- **Focus**: Core business logic in service layer, basic error handling
+- **Pattern**: Service-repository implementation with basic validation
+
+**🔄 MODIFICATION PHASE (수정 과정)**:
+- **Objective**: Maintain system integrity while implementing changes
+- **Critical Rule**: **MANDATORY BACKWARD COMPATIBILITY VERIFICATION**
+- **Focus**: API contract preservation, deprecation warnings
+
+**🚀 ENHANCEMENT PHASE (고도화 과정)**:
+- **Objective**: Optimize and apply full enterprise architecture
+- **Focus**: Performance optimization, scalability, enterprise pattern refinement
+- **Apply**: Full SOLID principles, advanced design patterns, comprehensive monitoring
+
+---
+
+## 🚨 ABSOLUTE PROHIBITIONS
+
+**NEVER DO**:
+- Call models directly from serializer validation methods
+- Skip service layer for business logic
+- Ignore proper error handling and logging
+- Violate layer separation principles
+- Apply workarounds instead of root cause fixes
+- Create monolithic view functions without service delegation
+- Hardcode configuration values
+- Ignore security best practices
+
+**ALWAYS DO**:
+- Follow enterprise architecture patterns
+- Implement proper error investigation protocols
+- Apply object-oriented design principles
+- Use appropriate Django built-in features
+- Maintain backward compatibility for API changes
+- Document architectural decisions
+- Reference appropriate rule files dynamically

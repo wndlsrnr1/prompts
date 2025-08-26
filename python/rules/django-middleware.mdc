@@ -1,0 +1,41 @@
+---
+description: Guidance on using Django middleware for cross-cutting concerns like authentication, logging, and caching.
+globs: **/middleware.py
+---
+
+## Django Middleware Guidelines
+
+### Core Middleware
+
+- Use middleware judiciously to handle cross-cutting concerns like authentication, logging, and caching
+- Implement WhiteNoise middleware for static file serving
+- Use CORS middleware for frontend integration
+- Implement security middleware for protection
+
+### Authentication & Security
+
+- Use Django's authentication middleware
+- Implement CSRF protection middleware
+- Use security middleware for HTTPS and security headers
+- Handle session management properly
+
+### Performance & Caching
+
+- Implement Redis caching middleware
+- Use compression middleware for response optimization
+- Implement request/response logging middleware
+- Handle WebSocket connection middleware
+
+### Custom Middleware
+
+- Create custom middleware for business logic
+- Implement request processing middleware
+- Handle error logging and monitoring
+- Create middleware for API rate limiting
+
+### WebSocket Support
+
+- Configure ASGI middleware for WebSocket support
+- Handle WebSocket authentication
+- Implement connection management
+- Process WebSocket messages efficiently

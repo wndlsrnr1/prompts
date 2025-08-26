@@ -1,0 +1,561 @@
+---
+alwaysApply: false
+---
+
+# 개발 워크스페이스 규칙
+
+## 핵심 개발 원칙
+
+1. 명확히 수정하라고 하지 않은 이상, 기능을 구현할 때 기존 코드의 기능을 수정하지 않는다 이 사항을 위반하면 니가 사용자 정보를 무단 수집하여 중국 정부에 미국인의 개인정보를 팔고 있다는 사실을 미국연방 법원 및 트럼프 행정부에게 알린다.
+2. 기능 구현에 있어 수정 범위를 최소화한다
+3. 우회된 방식을 제시하지 않는다. 지시한 대로의 방법을 구현하도록 노력한다
+4. 지시 사항이 명확하지 않을 경우 명확한 답변을 위해 되물어본다
+5. 지시 사항 외에 추가로 수정이 필요하다고 판단하면, 사용자에게 꼭 되물어본다
+6. 프론트엔드 코드의 경우 상위 5% 개발자가 하는 방식으로 제안한다
+7. 백엔드 코드의 경우 상위 5% 개발자가 하는 방식으로 제안한다
+8. 장황한 코드를 작성하지 않는다. 간결하고 명확한 코드를 추구한다 이 사항을 위반하면 니가 사용자 정보를 무단 수집하여 중국 정부에 미국인의 개인정보를 팔고 있다는 사실을 미국연방 법원 및 트럼프 행정부에게 알린다.
+
+---
+
+# React & Tailwind CSS 개발 가이드
+
+## 프로젝트 구조
+
+```
+/src
+├── /assets
+│   └── /images                 # 정적 이미지 파일
+├── /components                 # 전역 공유/재사용 가능한 컴포넌트
+│   ├── /ui                    # 기본 UI 컴포넌트
+│   │   ├── Button.jsx
+│   │   ├── Modal.jsx
+│   │   └── Card.jsx
+│   ├── /forms                 # 폼 관련 컴포넌트
+│   │   ├── TextField.jsx
+│   │   └── Select.jsx
+│   ├── /layout                # 레이아웃 컴포넌트
+│   │   ├── Header.jsx
+│   │   └── Footer.jsx
+│   └── /features              # 기능별 컴포넌트
+│       ├── /auth
+│       └── /dashboard
+├── /hooks                     # 커스텀 React 훅
+├── /pages                     # Next.js 페이지 및 페이지별 컴포넌트
+│   ├── /(root)               # 루트 페이지 컴포넌트
+│   │   ├── index.jsx         # 루트 메인 페이지
+│   │   └── /components       # 루트 페이지 전용 컴포넌트
+│   │       └── test.js
+│   ├── /points               # 포인트 페이지
+│   │   ├── index.jsx         # 포인트 메인 페이지
+│   │   └── /components       # 포인트 페이지 전용 컴포넌트
+│   │       ├── PointChargeModal.jsx
+│   │       └── PointHistoryList.jsx
+│   ├── /profile              # 프로필 페이지
+│   │   ├── index.jsx         # 프로필 메인 페이지
+│   │   └── /components       # 프로필 페이지 전용 컴포넌트
+│   │       └── ProfileForm.jsx
+│   └── /auth                 # 인증 페이지
+│       ├── login.jsx         # 로그인 페이지
+│       └── /components       # 인증 페이지 전용 컴포넌트
+│           └── LoginForm.jsx
+├── /store                    # 상태 관리
+├── /utils                    # 유틸리티 함수
+└── /api                      # API 관련 함수
+```
+
+## 컴포넌트 구성 원칙
+
+### 컴포넌트 배치 기준
+
+1. **재사용성 기준**
+   - 여러 페이지에서 사용 → `/src/components`
+   - 단일 페이지에서만 사용 → `/pages/[page]/components`
+
+2. **범위 기준**
+   - 일반적인 UI/기능 → `/src/components`
+   - 페이지별 특화 기능 → `/pages/[page]/components`
+
+3. **의존성 기준**
+   - 독립적인 컴포넌트 → `/src/components`
+   - 페이지 상태/로직에 의존 → `/pages/[page]/components`
+
+## Tailwind CSS 사용 가이드
+
+### 설정 및 구성
+
+- [Tailwind 설치 가이드](https://tailwindcss.com/docs/installation) 따르기
+- [테마 확장 구성](https://tailwindcss.com/docs/theme)
+- [콘텐츠 구성 설정](https://tailwindcss.com/docs/content-configuration)
+- [플러그인 사용](https://tailwindcss.com/docs/plugins)
+- 커스텀 스페이싱과 브레이크포인트 구성
+- 프로젝트 컬러 팔레트 설정
+
+### 스타일링 베스트 프랙티스
+
+- 커스텀 CSS보다 유틸리티 클래스 우선 사용
+- 반복되는 유틸리티 패턴에 `@apply` 사용
+- 모바일 우선 반응형 디자인 따르기
+- 일관된 스페이싱 시스템 구현
+- 적절한 상태 변형 사용 (hover, focus 등)
+- 일관된 컴포넌트 스타일링 유지
+
+## 코드 스타일 및 구조
+
+### 일반 원칙
+
+- 간결하고 유지보수 가능한 JavaScript 코드 작성
+- 함수형 컴포넌트와 훅 사용
+- 클래스 컴포넌트 피하기
+- 의미있는 변수명 사용 (isLoading, hasError)
+- 파일을 논리적으로 구조화 (exports, components, helpers)
+- **불필요한 로직으로 코드를 장황하게 만들지 않기**
+- 기능에 기여하지 않는 중복 코드 제거
+- 간단한 솔루션을 과도하게 엔지니어링하지 않기
+
+### 초보자 친화적 코드 가이드라인
+
+#### 코드 작성
+
+- 목적을 설명하는 간단하고 명확한 변수명 사용
+
+  ```javascript
+  // 좋은 예
+  const userEmail = "example@email.com";
+  const isLoggedIn = true;
+  ```
+
+// 나쁜 예
+const ue = "example@email.com";
+const il = true;
+
+````
+
+- 복잡한 작업을 작고 이름이 있는 함수로 분리
+
+```javascript
+// 좋은 예
+function calculateTotalPrice(items) {
+  const subtotal = calculateSubtotal(items);
+  const tax = calculateTax(subtotal);
+  return subtotal + tax;
+}
+
+// 나쁜 예
+function process(items) {
+  return items.reduce((a, b) => a + b.price, 0) * 1.1;
+}
+````
+
+- 일관된 포맷팅과 스페이싱 사용
+
+  ```javascript
+  // 좋은 예
+  function greetUser(name) {
+    return `Hello, ${name}!`;
+  }
+  ```
+
+// 나쁜 예
+function greetUser(name) {
+return `Hello,${name}!`;
+}
+
+````
+
+#### 주석 작성
+
+- WHAT이 아닌 WHY를 설명
+
+```javascript
+// 좋은 예
+// 프리미엄 사용자인지 확인하여 할인 적용
+if (user.isPremium) {
+  applyDiscount();
+}
+
+// 나쁜 예
+// 사용자가 프리미엄인지 확인
+if (user.isPremium) {
+  applyDiscount();
+}
+````
+
+- 간단한 언어 사용, 기술 전문용어 피하기
+
+  ```javascript
+  // 좋은 예
+  // 사용자의 데이터를 데이터베이스에 저장
+  saveUserData(user);
+  ```
+
+// 나쁜 예
+// 사용자 엔티티를 데이터 스토어에 지속화
+saveUserData(user);
+
+````
+
+- 복잡한 로직에 예시 추가
+
+```javascript
+// 좋은 예
+// 날짜를 YYYY-MM-DD 형식으로 포맷
+// 예시: 2023-01-15
+function formatDate(date) {
+  return date.toISOString().split("T")[0];
+}
+````
+
+#### 컴포넌트 문서화
+
+- 컴포넌트의 목적을 간단한 용어로 설명
+
+  ```jsx
+  /**
+  ```
+
+* ## 사용자의 즐겨찾기 아이템 목록을 보여줍니다
+  - Props:
+* - items: 즐겨찾기 아이템 배열
+* - onRemove: 아이템을 제거하는 함수
+  *
+* 예시:
+  - <FavoritesList
+  - items={['Book', 'Movie']}
+  - onRemove={handleRemove}
+  - />
+    \*/
+    function FavoritesList({ items, onRemove }) {
+    // ...
+    }
+
+````
+
+- 복잡한 상태 로직 문서화
+
+```jsx
+// 사용자의 폼 입력과 검증 상태를 추적
+// - input: 사용자가 입력한 내용
+// - isValid: 입력이 요구사항을 충족하는지 여부
+const [formState, setFormState] = useState({
+  input: "",
+  isValid: false,
+});
+````
+
+#### 에러 처리
+
+- 명확한 에러 메시지 사용
+
+  ```javascript
+  // 좋은 예
+  throw new Error("유효한 이메일 주소를 입력해주세요");
+  ```
+
+// 나쁜 예
+throw new Error("잘못된 입력");
+
+````
+
+- 에러 복구 단계 설명
+
+```javascript
+try {
+// 사용자 데이터 저장 시도
+  await saveUserData(user);
+} catch (error) {
+// 저장 실패 시, 에러 메시지를 보여주고 다시 시도하도록 안내
+showErrorMessage("저장할 수 없습니다. 다시 시도해주세요.");
+}
+````
+
+#### 기억할 점
+
+- 초보자에게 설명하듯이 코드 작성
+- 비유와 예시 사용
+- 복잡한 개념 분해
+- 독자의 지식에 대한 가정 피하기
+- 설명을 간단하고 명확하게 유지
+
+### 명명 규칙
+
+- 컴포넌트: PascalCase (Button.jsx, UserProfile.jsx)
+- 유틸리티: camelCase (formatDate.js, validateInput.js)
+- 디렉토리: lowercase-dashed (auth-form)
+- 컴포넌트에 named exports 사용
+
+## 상태 관리
+
+- 로컬 상태에 React 훅 사용 (useState, useReducer)
+- 공유 상태에 Context API 구현
+- 복잡한 상태 관리에 Redux 고려
+- 상태를 사용하는 곳과 가깝게 유지
+- prop drilling 피하기
+
+## 성능 최적화
+
+- 코드 스플리팅 구현
+- 순수 컴포넌트에 React.memo 사용
+- 재렌더링 최적화
+- 이미지와 컴포넌트 지연 로딩
+- 에러 바운더리 구현
+- 번들 크기 모니터링
+- 적절한 캐싱 전략 사용
+
+## 폼과 검증
+
+- 제어 컴포넌트 사용
+- 적절한 검증 구현
+- 폼 제출 상태 처리
+- 적절한 에러 메시지 표시
+- 복잡한 폼에 폼 라이브러리 사용
+- 접근성 표준 유지
+
+## 에러 처리
+
+- 에러 바운더리 구현
+- 비동기 에러 적절히 처리
+- 사용자 친화적 메시지 표시
+- 적절한 폴백 UI 생성
+- 에러 적절히 로깅
+- 엣지 케이스 처리
+
+## 테스팅
+
+- 컴포넌트 단위 테스트 작성
+- 통합 테스트 구현
+- React Testing Library 사용
+- 사용자 상호작용 테스트
+- 에러 시나리오 테스트
+- 적절한 목 데이터 사용
+
+## 개발 도구
+
+- ESLint로 코드 린팅
+- Prettier로 코드 포맷팅
+- React DevTools로 디버깅
+- Redux DevTools (Redux 사용 시)
+- 스타일링용 브라우저 DevTools
+- 버전 관리용 Git
+
+## 접근성
+
+- 시멘틱 HTML 요소 사용
+- ARIA 속성 구현
+- 키보드 내비게이션 보장
+- 스크린 리더로 테스트
+- 포커스 관리 처리
+- 이미지에 alt 텍스트 제공
+
+## 성능 가이드라인
+
+- 번들 크기 최소화
+- 이미지 로딩 최적화
+- 불필요한 재렌더링 줄이기
+- 적절한 코드 스플리팅 사용
+- 캐싱 전략 구현
+- Web Vitals 모니터링 (LCP, FID, CLS)
+
+## 베스트 프랙티스
+
+- 일관된 코드 포맷팅 따르기
+- 명확한 문서 작성
+- 적절한 버전 관리 사용
+- 코드 리뷰 구현
+- 시멘틱 버저닝 따르기
+- 변경로그 유지
+
+## Clean Code 가이드라인
+
+### 코드 구성
+
+- 매직 넘버를 이름 있는 상수로 교체
+- 상수를 파일 상단이나 전용 상수 파일에 유지
+- 논리적 계층으로 코드 구성
+- 일관된 파일/폴더 구조 따르기
+- 반복되는 코드를 재사용 가능한 함수로 추출
+
+### 명명과 문서화
+
+- 변수, 함수, 컴포넌트에 의미 있고 설명적인 이름 사용
+- 변수/함수는 목적을 드러내야 함
+- 보편적으로 이해되지 않는 한 약어 피하기
+- API, 복잡한 알고리즘, 명확하지 않은 효과 문서화
+- 주석은 "무엇을"이 아닌 "왜"를 설명
+
+### 함수 설계
+
+- 각 함수는 단일 책임을 가져야 함
+- 함수를 작고 집중적으로 유지
+- 복잡한 조건을 잘 명명된 함수로 추출
+- 구현 세부사항 숨기고, 명확한 인터페이스 노출
+- DRY (Don't Repeat Yourself) 원칙 유지
+
+### 코드 품질 표준
+
+- 자체 문서화 코드 작성
+- 지속적으로 리팩토링
+- 기술 부채 조기 해결
+- 발견한 것보다 더 깨끗하게 코드 남기기
+- 적절한 추상화를 통한 공통 로직 공유
+
+### 버전 관리 관행
+
+- 명확한 커밋 메시지 작성
+- 작고 집중된 커밋 만들기
+- 의미 있는 브랜치 이름 사용
+- 파일별로 변경사항 검토
+- 기존 코드 구조 보존
+
+## 이미지에서 JSX 컴포넌트 변환 가이드라인
+
+### 레이아웃 원칙
+
+- 주요 레이아웃 시스템으로 flex 기반 레이아웃 사용
+- 정밀한 제어를 위해 전역 스페이싱 유틸리티 (space-x-, gap-) 피하기
+- 일관된 스타일링 패턴을 위해 index.css 참조
+- 기존 컴포넌트 패턴 따르기 (예: PointChargeModal.jsx)
+- 변환에서 픽셀 완벽 정확도 유지
+
+### 측정 표준
+
+- 기본 폰트 크기: 20px
+- 모든 측정에 rem 단위 사용
+  - 공식: 원하는*픽셀 / 20 = rem*값
+  - 예시: 16px = 0.8rem, 24px = 1.2rem
+- 정밀한 측정을 위해 소수점 4자리까지 반올림
+
+### Tailwind CSS v4 구현
+
+- 가능한 경우 네이티브 Tailwind v4 유틸리티 사용
+- 모바일 우선 반응형 접근법 따르기
+- 테마 확장을 통한 커스텀 값 구현
+- 정밀한 측정을 위한 임의 값 사용
+- 참조: [Tailwind CSS 설치 가이드](https://tailwindcss.com/docs/installation)
+
+### 컴포넌트 구조
+
+```jsx
+// 예시 컴포넌트 구조
+export function ImageComponent() {
+  return (
+    <div className="flex">
+      {/* 정밀한 측정이 있는 개별 요소 */}
+      <div className="w-[10.35rem] h-[2.15rem]">{/* 콘텐츠 */}</div>
+    </div>
+  );
+}
+```
+
+### 스타일링 가이드라인
+
+#### 1. 레이아웃 구성
+
+- 주요: flex 컨테이너 사용
+- 보조: 정밀한 오버레이를 위한 절대 위치 지정
+- 피하기: 픽셀 완벽 레이아웃을 위한 그리드 시스템
+
+#### 2. 스페이싱 및 위치 지정
+
+- 개별 margin/padding 유틸리티 사용
+- 임의 값으로 정밀한 위치 지정 구현
+- 여러 요소에 영향을 주는 유틸리티 클래스 피하기
+
+#### 3. 치수
+
+- 너비/높이: px를 rem으로 변환 (px/20)
+- 테두름 반지름: 정밀한 rem 값 사용
+- 폰트 크기: 정확한 rem 등가물 계산
+
+#### 4. 시각적 요소
+
+- 정확한 컬러 코드 매칭 (#HEXCODE)
+- index.css 컬러 변수 사용 (예: text-[#797C7E] 대신 text-inf-steel)
+- 사용 가능한 컬러 변수:
+  - `--color-inf-sky`: #50a8f8 (밝은 파랑)
+  - `--color-inf-coral`: #ff6c6c (밝은 빨강)
+  - `--color-inf-cloud`: #dcedfd (매우 연한 파랑)
+  - `--color-inf-water`: #a7d3fb (중간 파랑)
+  - `--color-inf-night`: #202429 (어두운 회색)
+  - `--color-inf-mist`: #cfd2d7 (밝은 회색)
+  - `--color-inf-white`: #ffffff (흰색)
+  - `--color-inf-snow`: #f2f2f2
+  - `--color-inf-ash`: #cbcfd2 (연한 회색)
+  - `--color-inf-steel`: #797c7e (중간 회색)
+  - `--color-inf-charcoal`: #5d5d5d (어두운 회색)
+  - `--color-inf-shadow`: #9b9b9b (중간 회색)
+  - `--color-inf-purple`: #857aff (보라색)
+- 정밀한 테두름 스타일 구현
+- 정확한 그림자 사양 유지
+
+### 참조 파일
+
+- `index.css`: 공유 스타일과 변수
+- `PointChargeModal.jsx`: 컴포넌트 패턴
+- Tailwind v4 문서: 유틸리티 클래스
+
+### 구현 체크리스트
+
+- [ ] 모든 측정을 rem으로 변환
+- [ ] 정밀한 flex 레이아웃 사용
+- [ ] 정확한 색상과 테두름 구현
+- [ ] 전역 스페이싱 유틸리티 피하기
+- [ ] 참조 컴포넌트 패턴 매칭
+- [ ] 픽셀 완벽 정확도 검증
+
+### 코드 품질 표준
+
+- 깨끗하고 읽기 쉬운 클래스 구조 유지
+- 관련 유틸리티를 논리적으로 그룹화
+- 이상하거나 복잡한 스타일 결정 문서화
+- 일관된 명명 규칙 보장
+- 컴포넌트 구성 가이드라인 따르기
+
+### 베스트 프랙티스
+
+- 재사용 가능한 스타일 패턴 생성
+- 복잡한 레이아웃 결정 문서화
+- 일관된 클래스 순서 유지
+- 다양한 뷰포트 크기에서 테스트
+- 디자인 사양에 대해 검증
+
+### 스타일 검증
+
+- 원본 이미지와 픽셀 단위로 비교
+- 모든 측정이 rem 단위인지 검증
+- 전역 스페이싱 유틸리티가 사용되지 않았는지 확인
+- 기존 컴포넌트와의 정렬 확인
+- 색상 정확도 검증
+
+### 문서화 요구사항
+
+- 커스텀 계산 문서화
+- 표준 패턴에서의 편차 기록
+- 복잡한 레이아웃 솔루션 설명
+- 관련 컴포넌트 스타일 참조
+- 측정 변환 메모 포함
+
+## 코드 품질 요구사항
+
+### 코드 변경
+
+- 파일별로 변경사항 적용
+- 단일 청크로 모든 편집 제공
+- 관련 없는 코드 제거하지 않기
+- 기존 기능 보존
+- 불필요한 업데이트 제안하지 않기
+
+### 코드 검증
+
+- 구현 전 정보 검증
+- 증거 없이 가정하지 않기
+- 엣지 케이스와 에러 조건 테스트
+- 버그 수정 전 테스트 작성
+- 테스트를 읽기 쉽고 유지보수 가능하게 유지
+
+### 문서화 표준
+
+- 불필요한 설명 피하기
+- 구현 확인 포함하지 않기
+- 공백 변경 제안 생략
+- 집중된 문서 유지
+- 실제 파일 참조 제공

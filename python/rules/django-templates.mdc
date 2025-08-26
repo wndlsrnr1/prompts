@@ -1,0 +1,41 @@
+---
+description: Rules for Django templates, focusing on rendering HTML and following best practices.
+globs: **/templates/**/*.html
+---
+
+## Django Templates Guidelines
+
+### Template Usage
+
+- Use Django templates for rendering HTML and DRF serializers for JSON responses
+- Create reusable template components
+- Use template inheritance for consistent layouts
+- Implement proper template organization
+
+### Admin Interface
+
+- Customize Django admin interface for content management
+- Implement admin actions for bulk operations
+- Use admin filters and search functionality
+- Create custom admin views when needed
+
+### Template Structure
+
+- Organize templates in app-specific directories
+- Use base templates for common layouts
+- Implement proper template context
+- Handle template errors gracefully
+
+### Security
+
+- Use template escaping for user-generated content
+- Implement CSRF tokens in forms
+- Validate template variables
+- Use safe template filters appropriately
+
+### Performance
+
+- Optimize template rendering
+- Use template caching when appropriate
+- Minimize template complexity
+- Use template fragments for dynamic content

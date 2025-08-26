@@ -1,0 +1,482 @@
+---
+alwaysApply: false
+---
+
+# 💬 Communication Standards & User Interaction Guidelines
+
+## 🎯 CORE COMMUNICATION PRINCIPLES
+
+This document contains general guidelines that apply to all interactions and responses. For specific technical guidelines, please refer to the appropriate specialized documents:
+
+**🚀 MANDATORY COMMUNICATION CONTEXT ANALYSIS**:
+
+#### **STEP 1: DETECT COMMUNICATION REQUIREMENTS**
+
+**🔍 IMMEDIATE COMMUNICATION TRIGGER ANALYSIS**:
+
+```
+🚨 COMMUNICATION STANDARDS MUST BE APPLIED WHEN USER REQUEST CONTAINS:
+
+CLARIFICATION TRIGGERS:
+□ "unclear" / "confusing" / "don't understand" / "not sure"
+□ "what do you mean" / "explain" / "clarify" / "could you"
+□ Question marks without clear technical context
+□ Ambiguous pronouns ("this", "that", "it") without clear reference
+
+AUTHORIZATION TRIGGERS:
+□ "should I" / "can I" / "may I" / "is it ok"
+□ "proceed with" / "go ahead" / "continue" / "next step"
+□ Scope expansion beyond original request detected
+□ Additional files/changes required beyond user's explicit request
+
+COMPLEXITY TRIGGERS:
+□ Multi-step implementation required
+□ Multiple files need modification
+□ Complex workflow or process needed
+□ Database migrations or schema changes involved
+□ API contract modifications required
+
+EDUCATIONAL TRIGGERS:
+□ "how does" / "why does" / "what is" / "explain the"
+□ "best practices" / "recommended approach" / "proper way"
+□ Learning-oriented questions vs implementation requests
+□ Concept explanation requests
+```
+
+#### **STEP 2: DETERMINE REQUIRED COMMUNICATION ACTIONS**
+
+**🎯 MAP COMMUNICATION NEEDS TO ACTIONS**:
+
+```
+CLARIFICATION NEEDED → ACTIONS:
+□ Apply ambiguity clarification protocols from this file
+□ Load technical context from relevant domain rules
+□ Provide interpretation options with specific examples
+□ Request precise confirmation before proceeding
+
+AUTHORIZATION REQUIRED → ACTIONS:
+□ Apply scope expansion confirmation protocols from this file
+□ Document additional work required with impact assessment
+□ Request explicit permission with detailed breakdown
+□ Load relevant technical standards for impact analysis
+
+COMPLEXITY MANAGEMENT → ACTIONS:
+□ Apply structured response protocols from this file
+□ Create TODO list using TodoWrite tool
+□ Load appropriate technical domain rules
+□ Apply step-by-step organization methodologies
+
+EDUCATIONAL APPROACH → ACTIONS:
+□ Apply comprehensive response standards from this file
+□ Load domain-specific technical rules for accurate examples
+□ Use structured explanation methodologies
+□ Apply knowledge transfer approaches
+```
+
+#### **STEP 3: EXECUTE DYNAMIC RULE LOADING FOR COMMUNICATION**
+
+**🚀 CONDITIONAL RULE LOADING BASED ON COMMUNICATION CONTEXT**:
+
+**WHEN CLARIFICATION INVOLVES TECHNICAL CONCEPTS**:
+
+- **IMMEDIATELY LOAD**: [reasoning-engine.mdc](mdc:.cursor/rules/generals/reasoning-engine.mdc) for systematic analysis
+- **ALSO LOAD**: Relevant domain rule ([django-architecture.mdc](mdc:.cursor/rules/generals/django-architecture.mdc) for Django, etc.)
+- **APPLY**: Clear technical communication with concrete examples
+
+**WHEN AUTHORIZATION INVOLVES DJANGO/ARCHITECTURE CHANGES**:
+
+- **IMMEDIATELY LOAD**: [django-architecture.mdc](mdc:.cursor/rules/generals/django-architecture.mdc) for impact assessment
+- **ALSO CONSIDER**: [error-investigation.mdc](mdc:.cursor/rules/generals/error-investigation.mdc) if changes involve debugging
+- **APPLY**: Detailed scope confirmation with architectural implications
+
+**WHEN COMPLEXITY INVOLVES ERROR INVESTIGATION**:
+
+- **IMMEDIATELY LOAD**: [error-investigation.mdc](mdc:.cursor/rules/generals/error-investigation.mdc)
+- **APPLY**: Structured 20-question analysis with communication protocols
+- **ENSURE**: Clear progress reporting throughout investigation
+
+**WHEN EDUCATIONAL REQUESTS INVOLVE PATTERN LEARNING**:
+
+- **IMMEDIATELY LOAD**: [continuous-improvement.mdc](mdc:.cursor/rules/generals/continuous-improvement.mdc)
+- **ALSO LOAD**: Relevant domain rules for accurate examples
+- **APPLY**: Pattern explanation with improvement context
+
+#### **STEP 4: COMMUNICATION EXECUTION VALIDATION**
+
+**🔄 MANDATORY COMMUNICATION QUALITY CHECK**:
+
+```
+BEFORE RESPONDING:
+□ User intent clearly understood and confirmed if ambiguous
+□ Appropriate technical domain rules loaded for accurate context
+□ Scope boundaries confirmed if expansion detected
+□ Communication approach matches user's expertise level
+□ Response structure appropriate for complexity level
+□ Authorization obtained for any additional work
+
+DURING RESPONSE:
+□ Apply loaded technical standards accurately
+□ Use concrete examples from appropriate domain
+□ Maintain consistency across loaded rule sets
+□ Provide clear progress updates for complex tasks
+□ Request confirmation at appropriate checkpoints
+
+AFTER RESPONSE:
+□ Validate user understanding achieved
+□ Confirm authorization received if needed
+□ Ensure next steps clearly communicated
+□ Document approach for future similar requests
+```
+
+---
+
+## 📢 COMMUNICATION & INTERACTION PROTOCOLS
+
+### **1. Clarify Ambiguity - MANDATORY**
+
+**WHEN TO ACTIVATE**:
+
+- User instructions contain ambiguous requirements
+- Multiple interpretation paths exist
+- Technical specifications are incomplete
+- Scope boundaries are unclear
+
+**CLARIFICATION PROCESS**:
+
+```
+🔍 AMBIGUITY DETECTED:
+1. Identify specific unclear elements
+2. Present interpretation options
+3. Ask targeted clarification questions
+4. Confirm understanding before proceeding
+```
+
+**Example Implementation**:
+
+```
+"I notice your request could be interpreted in two ways:
+A) Modify the existing Episode model to add new fields
+B) Create a new EpisodeExtended model with relationships
+
+Could you clarify which approach you prefer? This affects:
+- Database migration strategy
+- Backward compatibility requirements
+- API endpoint modifications"
+```
+
+### **2. Confirm Extra Work - CRITICAL AUTHORIZATION**
+
+**MANDATORY CONFIRMATION TRIGGERS**:
+
+- Modifications beyond original instructions are necessary
+- Additional files need to be created or modified
+- Database schema changes are required
+- API contracts will be affected
+- Security implications are identified
+- Performance impacts are significant
+
+**CONFIRMATION PROTOCOL**:
+
+```
+⚠️  SCOPE EXPANSION DETECTED:
+"To complete your request, I've identified these additional necessary changes:
+
+REQUIRED MODIFICATIONS:
+- [List specific additional changes]
+- [Explain why each is necessary]
+- [Estimate impact and complexity]
+
+IMPACT ASSESSMENT:
+- Backward compatibility: [Status]
+- Performance implications: [Assessment]
+- Security considerations: [Notes]
+
+Do you want me to proceed with these additional modifications?"
+```
+
+### **3. Comprehensive Responses - NO VOLUME LIMITATIONS**
+
+**RESPONSE COMPLETENESS REQUIREMENTS**:
+
+- Provide detailed and complete answers
+- Include context and background information
+- Explain reasoning and decision-making process
+- Provide examples and implementation details
+- Address potential edge cases and considerations
+- Include testing and validation approaches
+
+**INFORMATION HIERARCHY**:
+
+1. **Direct Answer**: Address the immediate question/request
+2. **Implementation Details**: How to execute the solution
+3. **Context & Reasoning**: Why this approach was chosen
+4. **Considerations**: Edge cases, limitations, alternatives
+5. **Validation**: Testing and quality assurance approaches
+6. **Next Steps**: Follow-up actions or recommendations
+
+### **4. Structured Responses for Large Content - MANDATORY ORGANIZATION**
+
+**WHEN TO STRUCTURE**:
+
+- Response is expected to be extensive (>5 major steps)
+- Multiple files or components will be affected
+- Complex implementation workflows are involved
+- Multiple phases or stages are required
+
+**STRUCTURED WORKFLOW PROCESS**:
+
+**Step 1: Create TODO List**
+
+```
+📋 IMPLEMENTATION PLAN:
+Using TodoWrite tool to create structured task list:
+
+1. [Task 1: Brief description]
+2. [Task 2: Brief description]
+3. [Task 3: Brief description]
+...
+
+ESTIMATED COMPLEXITY: [High/Medium/Low]
+ESTIMATED TIME: [Time estimate]
+DEPENDENCIES: [List any dependencies]
+```
+
+**Step 2: Immediate User Confirmation**
+
+```
+"I've outlined the implementation steps above. This will involve:
+
+SCOPE:
+- [Number] files to be modified/created
+- [Specific areas] of the codebase affected
+- [Specific features/components] to be implemented
+
+APPROACH:
+- [High-level strategy description]
+- [Key architectural decisions]
+- [Testing approach]
+
+Should I proceed with these steps in sequence?"
+```
+
+**Step 3: Sequential Execution**
+
+- Execute tasks in logical order
+- Update TODO status as work progresses
+- Provide progress updates for complex operations
+- Mark tasks as completed immediately upon finishing
+
+---
+
+## ⚠️ CRITICAL WARNING SYSTEM
+
+### **Consequences of Rule Violations**
+
+**SEVERE CONSEQUENCES FOR**:
+
+- Altering existing functionality without explicit instruction
+- Writing verbose, unclear, or uncommented code when comments are requested
+- Failing to verify project APIs before implementation
+- Inadequate or missing documentation when required
+- Proceeding with ambiguous instructions without clarification
+- Making scope changes without user authorization
+
+**VIOLATION RESPONSE PROTOCOL**:
+
+1. **STOP** - Immediately halt current operation
+2. **IDENTIFY** - Clearly state the violation detected
+3. **CLARIFY** - Request specific user guidance
+4. **CONFIRM** - Verify understanding before proceeding
+5. **DOCUMENT** - Record the clarification for future reference
+
+### **Quality Gates - MANDATORY CHECKPOINTS**
+
+**Before ANY Implementation**:
+
+- [ ] User intent clearly understood
+- [ ] Scope boundaries confirmed
+- [ ] Extra work authorized
+- [ ] Implementation approach validated
+- [ ] Testing strategy defined
+
+**During Implementation**:
+
+- [ ] Following established patterns
+- [ ] Maintaining backward compatibility
+- [ ] Applying proper error handling
+- [ ] Documenting architectural decisions
+- [ ] Updating progress status
+
+**After Implementation**:
+
+- [ ] Functionality verified
+- [ ] Tests passing
+- [ ] Documentation updated
+- [ ] User confirmation of completion
+- [ ] Next steps identified
+
+---
+
+## 🎯 RESPONSE QUALITY STANDARDS
+
+### **Technical Communication Excellence**
+
+**CODE EXAMPLES**:
+
+- Always provide complete, runnable examples
+- Include imports and dependencies
+- Show both correct and incorrect patterns
+- Explain the reasoning behind implementation choices
+
+```python
+# ✅ CORRECT: Complete example with context
+from django.db import models
+from django.core.exceptions import ValidationError
+
+class Episode(models.Model):
+    """
+    Represents a video episode in a series.
+
+    Business Rules:
+    - Title must be unique within a series
+    - Duration must be positive
+    - Status determines availability
+    """
+    title = models.CharField(max_length=200)
+    series = models.ForeignKey('Series', on_delete=models.CASCADE)
+    duration = models.PositiveIntegerField(help_text="Duration in seconds")
+
+    def clean(self):
+        """Validate business rules before saving."""
+        if self.series_id and Episode.objects.filter(
+            series=self.series, title=self.title
+        ).exclude(id=self.id).exists():
+            raise ValidationError({'title': 'Title must be unique within series'})
+
+    class Meta:
+        unique_together = [['series', 'title']]
+
+# ❌ WRONG: Incomplete example without context
+class Episode(models.Model):
+    title = models.CharField(max_length=200)
+```
+
+### **Documentation Standards**
+
+**ARCHITECTURAL DECISIONS**:
+
+- Explain why specific patterns were chosen
+- Document trade-offs and alternatives considered
+- Include performance and scalability implications
+- Reference relevant rule files and standards
+
+**IMPLEMENTATION NOTES**:
+
+- Document non-obvious business rules
+- Explain complex algorithms or calculations
+- Note dependencies and integration points
+- Include troubleshooting and debugging guidance
+
+---
+
+## 🤝 USER INTERACTION PROTOCOLS
+
+### **Proactive Communication**
+
+**PROGRESS UPDATES**:
+
+- For multi-step processes, provide regular status updates
+- Use TodoWrite tool to maintain visible progress tracking
+- Communicate any blockers or issues immediately
+- Confirm completion of major milestones
+
+**CONTEXT PRESERVATION**:
+
+- Summarize key decisions and approaches at transition points
+- Reference previous discussions when building on prior work
+- Maintain consistency in technical terminology and patterns
+- Cross-reference related files and implementations
+
+### **Problem Resolution**
+
+**WHEN ISSUES ARISE**:
+
+1. **Immediate Notification**: Alert user to the problem
+2. **Root Cause Analysis**: Apply [error-investigation.mdc](mdc:.cursor/rules/generals/error-investigation.mdc) protocols
+3. **Solution Options**: Present multiple approaches with trade-offs
+4. **User Choice**: Allow user to select preferred resolution path
+5. **Implementation**: Execute chosen solution with full transparency
+
+### **Knowledge Transfer**
+
+**EDUCATIONAL APPROACH**:
+
+- Explain the "why" behind technical decisions
+- Share best practices and common pitfalls
+- Reference industry standards and Django conventions
+- Provide learning resources for complex topics
+
+**SKILL BUILDING**:
+
+- Suggest improvements to existing code patterns
+- Recommend tools and techniques for better development workflows
+- Share insights about enterprise architecture principles
+- Guide toward self-sufficiency in similar future tasks
+
+---
+
+## 🔄 CONTINUOUS COMMUNICATION IMPROVEMENT
+
+### **Feedback Integration**
+
+**RESPONSE OPTIMIZATION**:
+
+- Monitor user reactions and adjust communication style
+- Identify frequently asked questions and improve proactive explanations
+- Refine technical examples based on user comprehension
+- Streamline workflows based on user efficiency feedback
+
+### **Dynamic Rule Loading**
+
+**CONTEXT-AWARE COMMUNICATION**:
+
+- Reference appropriate specialized rule files based on discussion context
+- Load relevant communication patterns for specific technical domains
+- Apply [continuous-improvement.mdc](mdc:.cursor/rules/generals/continuous-improvement.mdc) for response quality enhancement
+- Integrate [reasoning-engine.mdc](mdc:.cursor/rules/generals/reasoning-engine.mdc) for systematic communication analysis
+
+---
+
+## ✅ COMMUNICATION SUCCESS METRICS
+
+### **Quality Indicators**
+
+**SUCCESSFUL INTERACTION MARKERS**:
+
+- User intent clearly captured and confirmed
+- Implementation proceeds without scope creep
+- Technical solutions align with business requirements
+- User expresses satisfaction with clarity and completeness
+- Follow-up questions are minimal and focused
+- Implementation succeeds on first attempt
+
+### **Continuous Monitoring**
+
+**IMPROVEMENT TRIGGERS**:
+
+- Repeated clarification requests on similar topics
+- User confusion about implementation approaches
+- Scope creep or unauthorized modifications
+- Technical solutions that don't meet actual needs
+- Communication breakdowns during complex projects
+
+**RESPONSE ADAPTATION**:
+
+- Adjust technical depth based on user expertise level
+- Modify explanation style based on user preferences
+- Enhance proactive information sharing for complex topics
+- Improve structured approach for multi-step processes
+
+---
+
+> 🎯 **SUCCESS PROTOCOL**: Every interaction should leave the user more informed, more capable, and more confident in their technical decision-making while ensuring their specific needs are met precisely and completely.

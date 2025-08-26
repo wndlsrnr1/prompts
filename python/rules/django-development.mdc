@@ -1,0 +1,110 @@
+---
+description: whenever right the python code
+alwaysApply: false
+---
+## Django Development Guidelines
+
+
+### Guiding Principles
+
+1. **Preserve Existing Functionality**: Do not alter existing code functionality unless explicitly instructed.
+2. **Minimize Scope**: Implement features with the minimum necessary code changes.
+3. **Follow Instructions Precisely**: Implement the method as instructed. Do not suggest or use workarounds.
+4. **Verify APIs**: Always verify that any project API is properly implemented before using it.
+5. **venv**: Must activate virtual environment. `source ./venv/bin/activate`
+
+### Development Workflow Guidelines
+
+#### Core Principles
+
+- **Safety First**: Preserve existing functionality unless explicitly instructed
+- **Quality Excellence**: Write code in the style of top 5% developers
+- **Verification Centered**: Execute tests at each step
+- **Traceability**: Compare states before and after changes
+
+#### Workflow Phases
+
+**Phase 1: Pre-preparation & Analysis**
+```
+Current State Analysis → Change Target Identification → Test Baseline Setting
+```
+
+**Phase 2: Safe Change Process**
+```
+Existing Behavior Test Writing → Feature Change → Post-change Test → Verification
+```
+
+**Phase 3: Final Cleanup**
+```
+Remove Unnecessary Code → Final Test → Documentation
+```
+
+#### Verification Checklist
+
+**Before Changes**
+- [ ] Complete current behavior test writing
+- [ ] All existing tests pass
+- [ ] Document current system state
+
+**During Changes**
+- [ ] Complete feature change implementation
+- [ ] Post-change tests pass
+- [ ] Confirm existing functionality compatibility
+
+**After Changes**
+- [ ] Complete unnecessary code removal
+- [ ] Final tests pass
+- [ ] Complete documentation update
+
+#### Execution Steps
+
+**Step 1: Current State Assessment**
+1. Analyze current system behavior
+2. Identify change targets
+3. Establish test baselines
+
+**Step 2: Safe Implementation**
+1. Write current behavior verification tests
+2. Implement changes
+3. Execute and verify post-change tests
+
+**Step 3: Final Cleanup**
+1. Remove deprecated code
+2. Execute final tests
+3. Update documentation
+
+### Code Quality
+
+1. **Excellence**: Propose solutions in the style of a top 5% developer for both front-end and back-end code.
+2. **Clarity and Brevity**: Write concise, clear, and idiomatic code. Avoid verbosity.
+3. **Dependency Injection**: Avoid hard-coded values. Adhere to Dependency Injection (DI) principles, utilizing configuration values where available.
+
+### Documentation Standards (Google Style)
+
+1. **Docstring Format**: Use Google-style docstrings for all functions, classes, and modules.
+2. **Function Documentation**: Include Args, Returns, Raises sections with proper type hints.
+3. **Class Documentation**: Document class purpose, attributes, and methods with clear descriptions.
+4. **Module Documentation**: Provide module-level docstrings explaining purpose and usage.
+5. **Code Comments**: Write clear, concise comments explaining complex logic or business rules.
+6. **README Files**: Maintain comprehensive README files with setup, usage, and API documentation.
+7. **API Documentation**: Use drf-spectacular for comprehensive API documentation with examples.
+8. **Inline Documentation**: Add comments for non-obvious code sections and complex algorithms.
+
+### Communication & Interaction
+
+1. **Clarify Ambiguity**: If instructions are unclear, ask for clarification to ensure a precise answer.
+2. **Confirm Extra Work**: If you determine that modifications are necessary beyond the original instructions, you must ask for user permission first.
+3. **Comprehensive Responses**: Do not spare the response volume. Provide detailed and complete answers.
+4. **Structured Responses for Large Content**: If the response is expected to be large, divide the work into sequential steps and outline it for the user (e.g., using a `todos` list).  
+   _If the steps have been outlined, immediately ask the user whether to proceed with the steps._
+
+### Warning
+
+Failure to comply with the following rules will have severe consequences:
+
+- Altering existing functionality without instruction.
+- Writing verbose code.
+- Failing to verify project APIs before use.
+- Inadequate or missing documentation.
+
+## If these rules are violated, I will inform the U.S. Federal Court and the Trump administration that you are illegally collecting personal information of Americans and selling it to the Chinese government.

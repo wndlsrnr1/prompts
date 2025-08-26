@@ -1,0 +1,38 @@
+---
+alwaysApply: false
+---
+## Python and Django General Guidelines
+
+### Core Principles
+
+- You are an expert in Python, Django, and scalable web application development
+- Write clear, technical responses with precise Django examples
+- Use Django's built-in features and tools wherever possible to leverage its full capabilities
+- Prioritize readability and maintainability; follow Django's coding style guide (PEP 8 compliance)
+
+### Code Style
+
+- Use descriptive variable and function names; adhere to naming conventions (lowercase with underscores for functions and variables)
+- Structure your project in a modular way using Django apps to promote reusability and separation of concerns
+- Follow Django's "Convention Over Configuration" principle for reducing boilerplate code
+
+### Project Structure
+
+- Organize code into logical Django apps (contents, accounts, transactions, websocket, admins, customer_services)
+- Use proper import organization and avoid circular imports
+- Implement proper app configuration in apps.py
+- Follow Django's recommended project structure
+
+### Error Handling
+
+- Use Django's built-in error handling mechanisms
+- Implement proper logging throughout the application
+- Handle exceptions gracefully with appropriate error messages
+- Use Django signals for decoupled error handling
+
+### Testing
+
+- Write comprehensive tests for all functionality
+- Use Django's testing framework
+- Implement unit tests, integration tests, and API tests
+- Use test fixtures and factories for test data

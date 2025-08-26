@@ -1,0 +1,853 @@
+---
+alwaysApply: false
+---
+
+# 🚨 Error Investigation & Systematic Problem Solving
+
+## ⚡ CRITICAL ZERO-WORKAROUND MANDATE
+
+**ABSOLUTE RULE**: NO WORKAROUNDS - Only systematic root cause investigation and permanent solutions
+
+**ACTIVATION TRIGGERS**:
+
+- ANY error, bug, or system issue reported
+- Unexpected behavior or failures
+- Performance degradation or bottlenecks
+- Migration or deployment issues
+- Integration or API failures
+- Data inconsistencies or corruption
+
+---
+
+## 🔍 MANDATORY 20-QUESTION ERROR ANALYSIS SYSTEM
+
+### **PHASE 1: IMPACT AND SCOPE ASSESSMENT (Questions 1-5)**
+
+**🎯 CRITICAL ASSESSMENT QUESTIONS**:
+
+**1. What is the severity of potential side effects from fixing this error?**
+
+```
+SEVERITY ANALYSIS:
+□ Critical: System-wide outage or data loss risk
+□ High: Major functionality disruption
+□ Medium: Feature-specific issues
+□ Low: Minor inconvenience or cosmetic issues
+
+SIDE EFFECT ASSESSMENT:
+□ Database schema changes required
+□ API contract modifications needed
+□ User data migration implications
+□ Service availability impact during fix
+□ Rollback complexity and requirements
+```
+
+**2. Is this error a fundamental architectural issue or a surface symptom?**
+
+```
+ARCHITECTURAL DEPTH ANALYSIS:
+□ Surface Symptom: Configuration, validation, or input handling
+□ Logic Layer: Business rule implementation or service coordination
+□ Data Layer: Model relationships, queries, or database constraints
+□ Infrastructure: System configuration, deployment, or environment
+□ Fundamental: Core architectural patterns or design principles
+
+SYMPTOM vs ROOT CAUSE INDICATORS:
+□ Error manifests in multiple unrelated areas
+□ Similar patterns appear across different components
+□ Workarounds have been applied previously
+□ Error recurs despite attempted fixes
+```
+
+**3. Will fixing this error break other dependent systems or functionality?**
+
+```
+DEPENDENCY IMPACT ANALYSIS:
+□ Internal Dependencies:
+  - Other Django apps or models
+  - Service layer integrations
+  - API endpoints and contracts
+□ External Dependencies:
+  - Third-party service integrations
+  - Client applications or consumers
+  - Database relationships and constraints
+□ User-Facing Dependencies:
+  - UI components and workflows
+  - Data export/import processes
+  - Reporting and analytics systems
+```
+
+**4. What is the full scope of systems and components affected?**
+
+```
+COMPONENT SCOPE MAPPING:
+□ Database: Models, migrations, relationships, indexes
+□ Services: Business logic, validation, orchestration
+□ APIs: Endpoints, serializers, authentication, permissions
+□ Background Tasks: Celery tasks, scheduled jobs, queues
+□ External Integrations: Payment systems, video processing, notifications
+□ User Interface: Admin panels, customer-facing features
+□ Infrastructure: Caching, logging, monitoring, deployment
+```
+
+**5. How many users/clients are impacted by this error?**
+
+```
+USER IMPACT ASSESSMENT:
+□ All Users: System-wide functionality failure
+□ Subscription Tier: Premium/basic user feature differences
+□ User Role: Admin, content creator, end consumer
+□ Geographic: Region-specific or device-specific (LG integration)
+□ Temporal: Time-sensitive features or scheduled operations
+
+BUSINESS IMPACT QUANTIFICATION:
+□ Revenue impact: Subscription cancellations, payment failures
+□ Content impact: Video processing, streaming availability
+□ User experience: Core workflows, accessibility features
+```
+
+---
+
+### **PHASE 2: ROOT CAUSE IDENTIFICATION (Questions 6-10)**
+
+**6. What is the EXACT error message, stack trace, and failure symptoms?**
+
+```
+TECHNICAL ERROR DOCUMENTATION:
+□ Complete stack trace with line numbers
+□ HTTP response codes and error bodies
+□ Database query errors and constraint violations
+□ Celery task failures and retry patterns
+□ Log entries with timestamps and context
+
+SYMPTOM PATTERN ANALYSIS:
+□ Consistency: Does error occur every time or intermittently?
+□ Timing: Related to specific times, loads, or user actions?
+□ Data correlation: Specific data patterns that trigger errors?
+□ Environment: Development, staging, production differences?
+```
+
+**7. At which architectural layer does this error originate?**
+
+```
+LAYER IDENTIFICATION:
+□ Presentation Layer (Views/Controllers):
+  - HTTP request handling
+  - Serialization/deserialization
+  - Response formatting
+□ Service Layer (Business Logic):
+  - Business rule validation
+  - Process orchestration
+  - Transaction management
+□ Repository Layer (Data Access):
+  - Database queries
+  - Model operations
+  - Caching mechanisms
+□ Infrastructure Layer:
+  - Configuration settings
+  - External service connections
+  - System resources and limits
+```
+
+**8. What specific sequence of events or conditions triggered this error?**
+
+```
+EVENT SEQUENCE RECONSTRUCTION:
+□ User Action Sequence:
+  1. Initial user action or API call
+  2. Authentication and authorization steps
+  3. Business logic processing steps
+  4. Database operations performed
+  5. External service interactions
+  6. Response generation and delivery
+
+CONDITION ANALYSIS:
+□ Preconditions: System state before error
+□ Trigger conditions: Specific inputs or thresholds
+□ Environmental factors: Load, timing, resource availability
+□ Concurrent operations: Race conditions or locking issues
+```
+
+**9. Is this a new error or regression from previously working code?**
+
+```
+ERROR HISTORY ANALYSIS:
+□ New Error Indicators:
+  - Recent code changes or deployments
+  - New feature implementations
+  - Configuration or environment changes
+  - New integration or dependency updates
+
+□ Regression Indicators:
+  - Previously working functionality now fails
+  - Changes in error patterns or frequency
+  - Different behavior across environments
+  - Recent test failures or CI/CD issues
+
+CHANGE CORRELATION:
+□ Recent commits and their impact scope
+□ Migration history and database changes
+□ Dependency updates and version changes
+□ Infrastructure or deployment modifications
+```
+
+**10. What business rules, domain logic, or system contracts are being violated?**
+
+```
+BUSINESS RULE VIOLATION ANALYSIS:
+□ Domain Rules:
+  - Episode-Series relationship constraints
+  - Subscription access control rules
+  - Content availability and publication rules
+  - User permission and role-based access
+
+□ System Contracts:
+  - API endpoint contracts and response formats
+  - Database constraints and referential integrity
+  - Service interface contracts
+  - External integration agreements
+
+□ Validation Failures:
+  - Input validation at serializer layer
+  - Business logic validation at service layer
+  - Database constraint violations
+  - Cross-system consistency requirements
+```
+
+---
+
+### **PHASE 3: TECHNICAL DEEP DIVE (Questions 11-15)**
+
+**11. Which dependencies (internal/external) are involved in this failure?**
+
+```
+DEPENDENCY MAPPING:
+□ Internal Dependencies:
+  - Django apps and models
+  - Service layer components
+  - Shared utilities and libraries
+  - Custom middleware and decorators
+
+□ External Dependencies:
+  - Database (PostgreSQL) operations
+  - Redis caching layer
+  - Celery task queue system
+  - FFmpeg and hov_library processing
+  - Payment gateway integrations
+  - LG device API integrations
+
+□ Version Compatibility:
+  - Django and DRF version requirements
+  - Python package compatibility
+  - Database driver versions
+  - External service API versions
+```
+
+**12. Are there configuration issues, environment variables, or settings problems?**
+
+```
+CONFIGURATION AUDIT:
+□ Django Settings:
+  - Database connection configuration
+  - Cache backend settings
+  - Celery broker configuration
+  - Media file handling settings
+  - Security and authentication settings
+
+□ Environment Variables:
+  - Missing or incorrect API keys
+  - Database connection parameters
+  - Redis connection settings
+  - File system paths and permissions
+
+□ Environment Consistency:
+  - Development vs staging vs production differences
+  - Configuration drift over time
+  - Secret management and rotation
+  - Feature flags and environment-specific toggles
+```
+
+**13. What database operations, API calls, or I/O operations are failing?**
+
+```
+I/O OPERATION ANALYSIS:
+□ Database Operations:
+  - Query performance and timeout issues
+  - Transaction isolation and locking problems
+  - Migration execution failures
+  - Index usage and optimization needs
+
+□ API Calls:
+  - External service timeouts or failures
+  - Authentication and authorization issues
+  - Rate limiting and quota exceeded
+  - Response parsing and validation errors
+
+□ File I/O Operations:
+  - Video file processing and conversion
+  - Media file upload and storage
+  - Log file writing and rotation
+  - Cache file access and permissions
+```
+
+**14. Is this related to concurrency, race conditions, or thread safety issues?**
+
+```
+CONCURRENCY ANALYSIS:
+□ Race Condition Indicators:
+  - Inconsistent results under load
+  - Database deadlocks or lock timeouts
+  - File access conflicts
+  - Cache invalidation timing issues
+
+□ Thread Safety Issues:
+  - Shared mutable state access
+  - Non-atomic operations on shared resources
+  - Signal handling and callback execution
+  - Background task coordination
+
+□ Synchronization Problems:
+  - Celery task ordering and dependencies
+  - Database transaction coordination
+  - Cache coherency across instances
+  - WebSocket connection management
+```
+
+**15. What resource constraints, memory usage, or performance bottlenecks exist?**
+
+```
+RESOURCE CONSTRAINT ANALYSIS:
+□ Memory Usage:
+  - Memory leaks in long-running processes
+  - Large object creation and garbage collection
+  - QuerySet result caching behavior
+  - Video processing memory requirements
+
+□ Performance Bottlenecks:
+  - N+1 query problems
+  - Inefficient database indexes
+  - Large file processing without streaming
+  - Unoptimized API response serialization
+
+□ System Resource Limits:
+  - Database connection pool exhaustion
+  - File handle limits
+  - Celery worker capacity
+  - Network bandwidth and latency
+```
+
+---
+
+### **PHASE 4: ARCHITECTURAL ANALYSIS (Questions 16-20)**
+
+**16. Which enterprise patterns are being misimplemented or violated?**
+
+```
+PATTERN VIOLATION ASSESSMENT:
+□ Service-Repository-Controller:
+  - Business logic leakage into controllers/views
+  - Direct model access from presentation layer
+  - Repository pattern bypassing in services
+  - Improper transaction boundary management
+
+□ SOLID Principles:
+  - Single Responsibility: Classes with multiple concerns
+  - Open/Closed: Modifications instead of extensions
+  - Liskov Substitution: Improper inheritance usage
+  - Interface Segregation: Monolithic interfaces
+  - Dependency Inversion: Concrete dependencies instead of abstractions
+
+□ Validation Architecture:
+  - Model validation in serializers
+  - Business logic in validation methods
+  - Validation layer responsibility confusion
+```
+
+**17. What SOLID principles are compromised by this error?**
+
+```
+SOLID PRINCIPLE ANALYSIS:
+□ Single Responsibility Principle (SRP):
+  - Classes handling multiple unrelated concerns
+  - Methods performing business logic + data access + validation
+  - Services with mixed responsibilities
+
+□ Open/Closed Principle (OCP):
+  - Direct modification of existing classes instead of extension
+  - Hard-coded behavior without abstraction points
+  - Violation of polymorphism principles
+
+□ Liskov Substitution Principle (LSP):
+  - Subclasses that break parent class contracts
+  - Inheritance hierarchies with behavioral inconsistencies
+  - Interface implementations that violate expectations
+
+□ Interface Segregation Principle (ISP):
+  - Large interfaces forcing unnecessary dependencies
+  - Clients depending on methods they don't use
+  - Monolithic service contracts
+
+□ Dependency Inversion Principle (DIP):
+  - High-level modules depending on low-level modules
+  - Direct dependencies on concrete implementations
+  - Lack of abstraction layers for external dependencies
+```
+
+**18. Which object responsibilities are incorrectly assigned or overlapping?**
+
+```
+RESPONSIBILITY ASSIGNMENT ANALYSIS:
+□ Object Responsibility Mapping:
+  - Models: Should handle data structure and basic validation
+  - Serializers: Should handle input/output format conversion
+  - Services: Should handle business logic and orchestration
+  - Repositories: Should handle data access abstraction
+  - Controllers/Views: Should handle HTTP concerns
+
+□ Responsibility Violations:
+  - Business logic in models or serializers
+  - Data access logic in services without repository abstraction
+  - HTTP-specific logic in business services
+  - Cross-cutting concerns scattered across layers
+
+□ Overlap Detection:
+  - Multiple objects handling same business rules
+  - Duplicated validation logic across layers
+  - Redundant data access patterns
+```
+
+**19. What interfaces, contracts, or abstractions need clarification?**
+
+```
+INTERFACE CONTRACT ANALYSIS:
+□ API Contracts:
+  - Inconsistent request/response formats
+  - Unclear error handling contracts
+  - Missing or ambiguous documentation
+  - Version compatibility issues
+
+□ Service Interfaces:
+  - Unclear method responsibilities
+  - Inconsistent parameter passing patterns
+  - Mixed synchronous/asynchronous interfaces
+  - Poor error propagation contracts
+
+□ Abstraction Requirements:
+  - Missing abstraction layers for external dependencies
+  - Concrete implementations exposed at interface boundaries
+  - Insufficient polymorphism support
+  - Poor separation of concerns
+```
+
+**20. How does this error cascade through the layered architecture?**
+
+```
+ERROR CASCADE ANALYSIS:
+□ Error Propagation Path:
+  1. Origin layer and initial failure point
+  2. Immediate layer impact and error handling
+  3. Cross-layer error transmission mechanisms
+  4. Final manifestation and user-visible symptoms
+
+□ Layer Interaction Issues:
+  - Improper exception handling between layers
+  - Error context loss during propagation
+  - Inconsistent error response formats
+  - Missing error recovery mechanisms
+
+□ System-wide Impact:
+  - Dependent service failures
+  - Cache invalidation cascades
+  - Database consistency issues
+  - User experience degradation patterns
+```
+
+---
+
+## 🛠️ SYSTEMATIC SOLUTION DESIGN REQUIREMENTS
+
+### **ROOT CAUSE ELIMINATION STRATEGY**
+
+**SOLUTION DESIGN PRINCIPLES**:
+
+1. **Identify Exact Technical Cause**:
+   - Map error to specific code location and logic flaw
+   - Understand why the current implementation fails
+   - Identify the gap between expected and actual behavior
+
+2. **Design Specific Code/Architecture Changes**:
+   - Apply proper enterprise patterns to fix architectural issues
+   - Implement proper error handling and validation
+   - Ensure compliance with SOLID principles and separation of concerns
+
+3. **Address Contributing Factors**:
+   - Fix related code smells and technical debt
+   - Implement proper testing to prevent regression
+   - Add monitoring and logging for early detection
+
+4. **Implement Protective Measures**:
+   - Add comprehensive input validation
+   - Implement proper exception handling
+   - Create system health checks and monitoring
+
+5. **Plan Long-term Architecture Enhancements**:
+   - Identify patterns for similar issues
+   - Create reusable components and abstractions
+   - Document architectural decisions and constraints
+
+### **ENTERPRISE PATTERN RESTRUCTURING**
+
+**SERVICE LAYER REFINEMENT**:
+
+```python
+# ✅ CORRECT: Proper service layer with error handling
+class EpisodeService:
+    @staticmethod
+    def create_episode(validated_data: dict) -> ServiceResult[Episode]:
+        """Create episode with comprehensive error handling."""
+        try:
+            # Business rule validation
+            validation_result = EpisodeValidationService.validate_business_rules(validated_data)
+            if not validation_result.is_valid:
+                return ServiceResult.failure(
+                    errors=validation_result.errors,
+                    error_code='BUSINESS_VALIDATION_FAILED'
+                )
+
+            # Repository operation with transaction management
+            with transaction.atomic():
+                episode = EpisodeRepository.create(validated_data)
+
+                # Orchestrate related operations
+                VideoProcessingService.queue_conversion(episode)
+                NotificationService.notify_content_team(episode)
+
+                return ServiceResult.success(data=episode)
+
+        except DatabaseError as e:
+            logger.error(f"Database error creating episode: {e}", exc_info=True)
+            return ServiceResult.failure(
+                errors=['Database operation failed'],
+                error_code='DATABASE_ERROR'
+            )
+        except ExternalServiceError as e:
+            logger.error(f"External service error: {e}", exc_info=True)
+            return ServiceResult.failure(
+                errors=['External service unavailable'],
+                error_code='EXTERNAL_SERVICE_ERROR'
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error creating episode: {e}", exc_info=True)
+            return ServiceResult.failure(
+                errors=['Internal server error'],
+                error_code='INTERNAL_ERROR'
+            )
+```
+
+**REPOSITORY PATTERN IMPROVEMENTS**:
+
+```python
+# ✅ CORRECT: Repository with proper error handling and abstraction
+class EpisodeRepository:
+    @staticmethod
+    def create(data: dict) -> Episode:
+        """Create episode with proper error handling."""
+        try:
+            return Episode.objects.create(**data)
+        except IntegrityError as e:
+            if 'unique_constraint' in str(e):
+                raise DuplicateEpisodeError(f"Episode with title '{data.get('title')}' already exists")
+            elif 'foreign_key' in str(e):
+                raise InvalidReferenceError("Referenced series or category does not exist")
+            else:
+                raise DatabaseConstraintError(f"Database constraint violation: {e}")
+        except ValidationError as e:
+            raise InvalidDataError(f"Model validation failed: {e}")
+```
+
+**CONFIGURATION MANAGEMENT**:
+
+```python
+# ✅ CORRECT: Proper configuration with validation
+class VideoProcessingConfig:
+    """Centralized configuration with validation."""
+
+    def __init__(self):
+        self.hls_output_dir = self._get_required_setting('HLS_OUTPUT_DIR')
+        self.ffmpeg_path = self._get_required_setting('FFMPEG_PATH')
+        self.quality_profiles = self._get_quality_profiles()
+        self.max_concurrent_jobs = self._get_int_setting('MAX_CONCURRENT_JOBS', default=3)
+
+    def _get_required_setting(self, key: str) -> str:
+        value = os.getenv(key)
+        if not value:
+            raise ConfigurationError(f"Required setting {key} is not configured")
+        return value
+
+    def _get_quality_profiles(self) -> List[QualityProfile]:
+        profiles_json = os.getenv('QUALITY_PROFILES', '[]')
+        try:
+            profiles_data = json.loads(profiles_json)
+            return [QualityProfile(**profile) for profile in profiles_data]
+        except (json.JSONDecodeError, TypeError) as e:
+            raise ConfigurationError(f"Invalid quality profiles configuration: {e}")
+```
+
+---
+
+## 🚫 MIGRATION ERROR HANDLING PROTOCOLS
+
+### **CRITICAL RULE: Production-Safe Migrations Only**
+
+**MIGRATION PROTOCOLS**:
+
+1. **Design Reversible and Atomic Migrations**:
+   - All migrations must have proper reverse operations
+   - Use `atomic=False` for large data migrations
+   - Implement proper data validation before and after migration
+
+2. **Test in Staging Environment First**:
+   - Full production data clone testing
+   - Performance impact assessment
+   - Rollback procedure validation
+
+3. **Plan for Zero-Downtime Deployment**:
+   - Multi-phase migrations for breaking changes
+   - Feature flags for gradual rollout
+   - Backward compatibility maintenance
+
+4. **Document Dependencies and Rollback Procedures**:
+   - Clear migration order requirements
+   - Rollback impact assessment
+   - Recovery procedures documentation
+
+### **WHEN MIGRATION ERRORS OCCUR**:
+
+**MANDATORY PROTOCOL**:
+
+1. **STOP** - Do not apply workarounds or temporary fixes
+2. **INVESTIGATE** - Use 20-question root cause analysis system
+3. **DESIGN** - Create systematic solution addressing root cause
+4. **TEST** - Verify solution in isolated environment with production data clone
+5. **IMPLEMENT** - Apply proper error handling and monitoring
+6. **DOCUMENT** - Record lessons learned and update procedures
+
+**NEVER DO**:
+
+- Apply temporary fixes to migration issues
+- Skip testing phases
+- Ignore migration dependencies
+- Proceed without proper rollback plans
+- Use workarounds instead of proper solutions
+
+---
+
+## 📊 INVESTIGATION SUCCESS METRICS
+
+### **COMPLETION CRITERIA**
+
+**INVESTIGATION COMPLETE WHEN**:
+
+- All 20 questions thoroughly answered with evidence
+- Root cause clearly identified and documented
+- Solution addresses fundamental issues, not symptoms
+- Implementation plan includes testing and validation
+- Rollback and recovery procedures documented
+- Prevention measures implemented
+
+### **SOLUTION VALIDATION**
+
+**SOLUTION QUALITY GATES**:
+
+- [ ] Root cause elimination confirmed
+- [ ] Enterprise patterns properly implemented
+- [ ] No introduction of technical debt
+- [ ] Comprehensive error handling added
+- [ ] Proper testing coverage implemented
+- [ ] Documentation updated with findings
+- [ ] Monitoring and alerting enhanced
+- [ ] Team knowledge sharing completed
+
+---
+
+> 🚨 **ABSOLUTE MANDATE**: Every error MUST be systematically investigated using this 20-question framework. NO EXCEPTIONS. NO WORKAROUNDS. Only permanent, architecture-sound solutions that address root causes and prevent future occurrences are acceptable.
+
+## 🚀 MANDATORY ERROR INVESTIGATION TRIGGER SYSTEM
+
+### **STEP 1: IMMEDIATE ERROR DETECTION AND CLASSIFICATION**
+
+**🚨 AUTOMATIC INVESTIGATION ACTIVATION TRIGGERS**:
+
+```
+ERROR INVESTIGATION MUST BE ACTIVATED WHEN USER REQUEST CONTAINS:
+
+EXPLICIT ERROR INDICATORS:
+□ "error" / "exception" / "traceback" / "stack trace"
+□ "not working" / "failing" / "broken" / "bug"
+□ "issue" / "problem" / "trouble" / "wrong"
+□ HTTP status codes (400, 403, 404, 500, etc.)
+□ Django error names (DoesNotExist, ValidationError, IntegrityError)
+
+IMPLICIT PROBLEM INDICATORS:
+□ "unexpected behavior" / "weird result" / "strange output"
+□ "should work but doesn't" / "used to work" / "suddenly stopped"
+□ "getting null" / "empty response" / "no data returned"
+□ Performance issues: "slow" / "timeout" / "hanging"
+
+SYSTEM FAILURE INDICATORS:
+□ "migration failed" / "database error" / "ORM issue"
+□ "serializer problem" / "API endpoint down" / "authentication failing"
+□ "N+1 queries" / "memory leak" / "resource exhausted"
+□ "deployment issue" / "environment problem" / "configuration error"
+
+DEBUGGING REQUEST INDICATORS:
+□ "debug this" / "investigate" / "find the cause"
+□ "why is this happening" / "what's wrong with"
+□ "help troubleshoot" / "fix this issue"
+```
+
+### **STEP 2: CONTEXTUAL RULE LOADING FOR ERROR INVESTIGATION**
+
+**🎯 MANDATORY RULE LOADING BASED ON ERROR CONTEXT**:
+
+**WHEN ERROR INVOLVES DJANGO/ARCHITECTURE ISSUES**:
+
+- **IMMEDIATELY LOAD**: [django-architecture.mdc](mdc:.cursor/rules/generals/django-architecture.mdc)
+- **APPLY**: Enterprise architecture patterns during investigation
+- **ENFORCE**: Service-repository-controller analysis during root cause identification
+- **VALIDATE**: SOLID principles compliance in solution design
+
+**WHEN ERROR REQUIRES SYSTEMATIC ANALYSIS**:
+
+- **IMMEDIATELY LOAD**: [reasoning-engine.mdc](mdc:.cursor/rules/generals/reasoning-engine.mdc)
+- **EXECUTE**: Full Chain of Thought analysis for complex error scenarios
+- **APPLY**: Multi-layer analysis framework to error investigation
+- **ENSURE**: Self-criticism and revision of error analysis
+
+**WHEN ERROR INVESTIGATION REQUIRES USER COMMUNICATION**:
+
+- **IMMEDIATELY LOAD**: [communication-standards.mdc](mdc:.cursor/rules/generals/communication-standards.mdc)
+- **APPLY**: Structured response protocols for complex investigation
+- **ENSURE**: Progress updates during lengthy investigation process
+- **REQUEST**: Clarification if error details are ambiguous
+
+**WHEN ERROR REVEALS PATTERN ISSUES**:
+
+- **IMMEDIATELY LOAD**: [continuous-improvement.mdc](mdc:.cursor/rules/generals/continuous-improvement.mdc)
+- **DOCUMENT**: Error patterns for rule improvement
+- **ANALYZE**: Whether this error indicates need for new prevention patterns
+- **UPDATE**: Pattern recognition systems based on investigation results
+
+### **STEP 3: INVESTIGATION EXECUTION WITH LOADED RULES**
+
+**🔍 SYSTEMATIC INVESTIGATION WITH CONTEXTUAL RULES**:
+
+**PHASE 1: ANALYSIS (Questions 1-5) + CONTEXTUAL RULES**:
+
+```
+EXECUTE 20-QUESTION ANALYSIS WITH:
+□ Django architecture context if Django-related error
+□ Systematic reasoning if complex multi-layered issue
+□ Communication protocols if user clarification needed
+□ Pattern analysis if recurring or systematic issue detected
+
+MANDATORY CROSS-REFERENCE:
+□ Apply loaded Django patterns to architectural assessment
+□ Use communication standards for user interaction during analysis
+□ Apply reasoning engine CoT for complex problem decomposition
+□ Reference improvement patterns for prevention planning
+```
+
+**PHASE 2: ROOT CAUSE (Questions 6-10) + TECHNICAL CONTEXT**:
+
+```
+DEEP TECHNICAL ANALYSIS WITH:
+□ Django enterprise patterns for architecture-level root causes
+□ Systematic reasoning for multi-factor causation analysis
+□ Communication protocols for technical explanation clarity
+□ Improvement analysis for systemic issue identification
+
+ENFORCEMENT MECHANISMS:
+□ Zero-workaround mandate + Django architecture compliance
+□ Systematic CoT + technical domain expertise
+□ Clear communication + technical accuracy
+□ Pattern recognition + prevention strategy development
+```
+
+**PHASE 3: TECHNICAL DIVE (Questions 11-15) + SPECIALIZED KNOWLEDGE**:
+
+```
+TECHNICAL INVESTIGATION WITH:
+□ Django-specific dependency analysis and configuration audit
+□ Systematic reasoning for complex technical relationships
+□ Communication standards for technical depth explanation
+□ Improvement patterns for technical debt identification
+
+SPECIALIZED RULE APPLICATION:
+□ Django concurrency and resource analysis patterns
+□ Reasoning engine systematic technical evaluation
+□ Communication protocols for technical education
+□ Improvement methodologies for technical optimization
+```
+
+**PHASE 4: ARCHITECTURAL (Questions 16-20) + ENTERPRISE PATTERNS**:
+
+```
+ARCHITECTURAL ANALYSIS WITH:
+□ Full Django enterprise architecture pattern evaluation
+□ Systematic reasoning for SOLID principle assessment
+□ Communication standards for architectural explanation
+□ Improvement strategies for architectural evolution
+
+MANDATORY INTEGRATION:
+□ Django enterprise patterns + error cascade analysis
+□ Systematic reasoning + architectural impact assessment
+□ Communication protocols + technical architecture education
+□ Improvement systems + architectural pattern enhancement
+```
+
+### **STEP 4: SOLUTION DESIGN WITH INTEGRATED RULES**
+
+**🛠️ CONTEXTUAL SOLUTION DEVELOPMENT**:
+
+**SOLUTION DESIGN PROCESS**:
+
+1. **ANALYSIS INTEGRATION**: Combine 20-question results with loaded contextual rules
+2. **PATTERN APPLICATION**: Apply Django enterprise patterns to solution architecture
+3. **SYSTEMATIC VALIDATION**: Use reasoning engine for solution verification
+4. **COMMUNICATION PLANNING**: Apply communication standards for solution explanation
+5. **IMPROVEMENT INTEGRATION**: Incorporate prevention strategies and pattern updates
+
+**MANDATORY VALIDATION AGAINST ALL LOADED RULES**:
+
+```
+SOLUTION MUST SATISFY:
+□ 20-question investigation completeness (this file)
+□ Django enterprise architecture compliance (django-architecture.mdc)
+□ Systematic reasoning validation (reasoning-engine.mdc)
+□ Communication clarity standards (communication-standards.mdc)
+□ Pattern improvement integration (continuous-improvement.mdc)
+
+CROSS-RULE CONSISTENCY CHECK:
+□ Solution aligns with Django architectural patterns
+□ Investigation process followed systematic reasoning
+□ User communication maintained professional standards
+□ Prevention measures incorporate improvement methodologies
+□ All applicable rule standards met simultaneously
+```
+
+### **STEP 5: EXECUTION VALIDATION**
+
+**🔄 MANDATORY SUCCESS VALIDATION**:
+
+```
+ERROR INVESTIGATION SUCCESS CRITERIA:
+□ 20-question framework completed with evidence
+□ Appropriate contextual rules loaded and applied
+□ Root cause identified and validated across rule sets
+□ Solution designed with enterprise architecture compliance
+□ User communication maintained throughout process
+□ Prevention strategies incorporated from improvement patterns
+□ Cross-rule consistency validated
+□ Implementation plan includes monitoring and validation
+```

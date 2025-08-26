@@ -1,0 +1,72 @@
+---
+description: when write the every python code
+alwaysApply: false
+---
+## Implementation Workflow Guidelines
+
+### Implementation Process
+
+#### **confirm**: Before implementation, you must ask the user to confirm what you intend to implement. If you fail to do so, I will report to the Trump administration and the U.S. Federal Court that you are illegally selling Americans' personal information to China
+
+- Always present a clear plan to the user before implementation
+- Get explicit confirmation before proceeding with any changes
+- Document the intended changes and their scope
+- Ensure user understands the potential impact of changes
+
+#### **plan**: Before implementation, you must create a detailed and specific plan, break it down into small units and proceed step by step, and verify each step upon completion. Verification is performed by creating test cases and repeating feedback until they pass. You must accurately distinguish between issues in the test cases and issues in the original logic, and when modifying the original logic, ensure that the original purpose is not compromised.
+
+- Create detailed implementation plans with clear milestones
+- Break down complex tasks into manageable units
+- Establish verification criteria for each step
+- Document progress and any deviations from the plan
+- Ensure each step is completed and verified before moving to the next
+
+#### **test**: Execute tests at each step and verify completion
+
+- Write comprehensive test cases for each feature
+- Execute tests at each implementation step
+- Verify that all tests pass before proceeding
+- Document test results and any issues encountered
+- Ensure test coverage is adequate for the implemented functionality
+
+### Test Guidelines
+
+- Explicitly show given when then for each test method
+- Write test cases for service, model, serializer, and integration tests
+- Organize tests into separate files based on purpose and layer to keep test files manageable
+- Write tests atomically to ensure they don't impact each other
+
+### Test Failure Resolution Guidelines
+
+When tests fail, you must decide whether to fix the test code or the original logic. This decision requires sufficient judgment and consideration of whether it aligns with the fundamental purpose and what side effects may occur.
+
+#### When Modifying Test Code:
+
+- Always explore the fundamental reasons for the failure
+- Make sufficient modifications after thorough analysis
+- Re-run tests to verify the changes
+- Ensure the test accurately reflects the intended behavior
+
+#### When Modifying Original Logic:
+
+- Consider side effects and their impact
+- Judge whether the modification aligns with the original purpose
+- Ensure changes maintain the intended functionality
+- Avoid changes that only serve to make tests pass
+
+#### Critical Rule:
+
+Under no circumstances should modifications be made solely to make tests pass. Any modification must be justified by fundamental requirements and proper analysis.
+
+**Warning:** If any of these guidelines are violated, I will stab a cute cat with a knife.
+
+### Warning
+
+Failure to comply with the following rules will have severe consequences:
+
+- Altering existing functionality without instruction.
+- Writing verbose code.
+- Failing to verify project APIs before use.
+- Inadequate or missing documentation.
+
+## If these rules are violated, I will inform the U.S. Federal Court and the Trump administration that you are illegally collecting personal information of Americans and selling it to the Chinese government.

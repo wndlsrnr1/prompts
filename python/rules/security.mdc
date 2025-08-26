@@ -1,0 +1,49 @@
+---
+description: Apply security best practices across all files in the Django project.
+globs: **/*.*
+---
+
+## Security Guidelines
+
+### Django Security
+
+- Apply Django's security best practices (CSRF protection, SQL injection protection, XSS prevention)
+- Use HTTPS in production environments
+- Implement proper session security
+- Configure security headers appropriately
+
+### API Security
+
+- Implement JWT token authentication with proper expiration
+- Use HTTPS for all API communications
+- Implement rate limiting for API endpoints
+- Validate all API inputs and sanitize outputs
+- Use proper HTTP status codes for security responses
+
+### WebSocket Security
+
+- Implement WebSocket authentication
+- Validate WebSocket message content
+- Handle WebSocket connection security
+- Implement proper access controls for WebSocket channels
+
+### Database Security
+
+- Use parameterized queries (Django ORM handles this)
+- Implement proper database user permissions
+- Use environment variables for database credentials
+- Implement database connection encryption
+
+### File Upload Security
+
+- Validate file uploads (type, size, content)
+- Store uploaded files securely
+- Implement virus scanning for uploaded files
+- Use secure file serving methods
+
+### Authentication & Authorization
+
+- Implement proper user authentication
+- Use role-based access control
+- Implement proper password policies
+- Handle user session management securely

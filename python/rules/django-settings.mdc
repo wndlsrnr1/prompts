@@ -1,0 +1,45 @@
+---
+description: Configurations for Django settings file with the list of dependencies and conventions.
+globs: **/settings.py
+---
+
+## Django Settings Configuration
+
+### Core Dependencies
+
+- Django==4.2.20
+- Django REST Framework==3.14.0 (for API development)
+- Celery==5.5.2 (for background tasks)
+- Redis==5.2.1 (for caching and task queues)
+- MySQL (mysqlclient==2.2.4) as production database
+- Channels==4.2.2 (for WebSocket support)
+- Daphne==4.1.2 (ASGI server)
+
+### Additional Dependencies
+
+- django-cors-headers==4.3.1 (CORS handling)
+- django-environ==0.10.0 (environment management)
+- django-extensions==4.0 (development utilities)
+- django-filter==25.1 (filtering)
+- djangorestframework-simplejwt==5.3.1 (JWT authentication)
+- drf-spectacular==0.26.5 (API documentation)
+- whitenoise==6.6.0 (static file serving)
+- django-redis==6.0.0 (Redis cache backend)
+
+### Environment Configuration
+
+- Use django-environ for environment variable management
+- Store sensitive data in .env file (not in version control)
+- Configure database settings via environment variables
+- Set DEBUG=False in production
+- Use Asia/Seoul timezone
+
+### Security Settings
+
+- Configure CORS properly for frontend integration
+- Use whitenoise for static file serving
+- Implement proper CSRF protection
+- Configure JWT token settings
+  
+
+---

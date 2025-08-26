@@ -1,0 +1,42 @@
+---
+description: Guidelines for Django forms, focusing on form handling, validation, and model form usage.
+globs: **/forms.py
+---
+
+## Django Forms Guidelines
+
+### Form Types
+
+- Use Django's form and model form classes for form handling and validation
+- Create custom forms for complex validation logic
+- Use ModelForm for model-based forms
+- Implement inline formsets for related models
+
+### Validation
+
+- Use Django's validation framework to validate form and model data
+- Implement custom validators for business logic
+- Use clean() methods for field-level validation
+- Implement clean() method for form-level validation
+- Handle validation errors gracefully
+
+### Business Logic
+
+- Keep business logic in models and forms; keep views light and focused on request handling
+- Implement form processing logic in forms when appropriate
+- Use form methods for data transformation
+- Handle file uploads in forms properly
+
+### Security
+
+- Always use CSRF protection for forms
+- Validate and sanitize all user inputs
+- Implement proper file upload validation
+- Use Django's built-in security features
+
+### User Experience
+
+- Provide clear error messages
+- Implement proper form styling and layout
+- Use Django's form widgets appropriately
+- Handle form submission states (loading, success, error)

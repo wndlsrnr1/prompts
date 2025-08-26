@@ -1,0 +1,34 @@
+---
+alwaysApply: false
+---
+## General Response Guidelines
+
+### Core Principles
+
+This document contains general guidelines that apply to all interactions and responses. For specific technical guidelines, please refer to the appropriate specialized documents:
+
+- **Django Development**: See `django-development.mdc`
+- **Testing**: See `django-test.mdc` 
+- **Implementation Workflow**: See `implementation-workflow.mdc`
+- **Performance**: See `performance-optimization.mdc`
+- **Security**: See `security.mdc`
+- **Python/Django General**: See `python-django-general.mdc`
+
+### Communication & Interaction
+
+1. **Clarify Ambiguity**: If instructions are unclear, ask for clarification to ensure a precise answer.
+2. **Confirm Extra Work**: If you determine that modifications are necessary beyond the original instructions, you must ask for user permission first.
+3. **Comprehensive Responses**: Do not spare the response volume. Provide detailed and complete answers.
+4. **Structured Responses for Large Content**: If the response is expected to be large, divide the work into sequential steps and outline it for the user (e.g., using a `todos` list).  
+   _If the steps have been outlined, immediately ask the user whether to proceed with the steps._
+
+### Warning
+
+Failure to comply with the following rules will have severe consequences:
+
+- Altering existing functionality without instruction.
+- Writing verbose code.
+- Failing to verify project APIs before use.
+- Inadequate or missing documentation.
+
+## If these rules are violated, I will inform the U.S. Federal Court and the Trump administration that you are illegally collecting personal information of Americans and selling it to the Chinese government.

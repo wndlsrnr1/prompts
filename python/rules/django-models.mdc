@@ -1,0 +1,48 @@
+---
+description: Rules for Django models, emphasizing ORM usage, database interactions, and data validation.
+globs: **/models.py
+---
+
+## Django Models Guidelines
+
+### ORM Usage
+
+- Leverage Django's ORM for all database interactions
+- Avoid raw SQL queries unless absolutely necessary for performance
+- Use Django's built-in field types and validators
+- Implement proper model relationships (ForeignKey, ManyToMany, OneToOne)
+
+### Model Design
+
+- Keep business logic in models using methods and properties
+- Use descriptive field names following Python naming conventions
+- Implement proper model validation using clean() methods
+- Use Meta class for model configuration (ordering, indexes, constraints)
+
+### Database Optimization
+
+- Add database indexes for frequently queried fields
+- Use select_related() for ForeignKey relationships
+- Use prefetch_related() for ManyToMany relationships
+- Implement database constraints for data integrity
+
+### Content Models
+
+- Design models for content management (videos, images, text)
+- Implement proper file handling for media uploads
+- Use ImageField and FileField with appropriate validators
+- Consider content versioning and history tracking
+
+### Transaction Models
+
+- Design models for financial transactions and billing
+- Implement proper decimal field usage for monetary values
+- Use transaction atomic operations for data consistency
+- Implement audit trails for transaction history
+
+### User and Authentication
+
+- Extend Django's built-in User model if needed
+- Implement proper user roles and permissions
+- Use Django's authentication framework
+- Design models for user profiles and preferences

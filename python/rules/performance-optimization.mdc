@@ -1,0 +1,48 @@
+---
+description: Focus on performance optimization techniques in all files of the project.
+globs: **/*.*
+---
+
+## Performance Optimization Guidelines
+
+### Database Optimization
+
+- Optimize query performance using Django ORM's select_related and prefetch_related for related object fetching
+- Implement database indexing for frequently queried fields
+- Use database query optimization techniques for better performance
+- Implement connection pooling for database connections
+
+### Caching Strategy
+
+- Use Django's cache framework with Redis backend to reduce database load
+- Implement view-level caching for expensive operations
+- Use template fragment caching for dynamic content
+- Cache API responses for frequently accessed data
+
+### Background Tasks
+
+- Use asynchronous views and background tasks (via Celery) for I/O-bound or long-running operations
+- Implement task queues for heavy processing
+- Use Redis as message broker for Celery
+- Monitor task execution and performance
+
+### WebSocket Performance
+
+- Optimize WebSocket message handling
+- Implement connection pooling for WebSocket connections
+- Use efficient message serialization
+- Handle WebSocket scaling and load balancing
+
+### Static File Management
+
+- Optimize static file handling with Django's static file management system (WhiteNoise)
+- Use CDN integration for static assets
+- Implement proper file compression
+- Optimize media file serving
+
+### Security and Performance
+
+- Prioritize security and performance optimization in every stage of development
+- Implement rate limiting for API endpoints
+- Use proper authentication caching
+- Monitor application performance metrics

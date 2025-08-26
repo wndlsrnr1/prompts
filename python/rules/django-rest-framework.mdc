@@ -1,0 +1,45 @@
+---
+description: Rules for Django REST Framework serializers, focusing on JSON responses.
+globs: **/serializers.py
+---
+
+## Django REST Framework Guidelines
+
+### Serializers
+
+- Use DRF serializers for JSON responses and request validation
+- Create separate serializers for different operations (create, update, read)
+- Implement proper field validation and custom validators
+- Use ModelSerializer for model-based serialization
+- Handle nested serializers for complex data structures
+
+### API Views
+
+- Use ViewSets for CRUD operations on models
+- Implement APIView for custom API behavior
+- Use GenericAPIView for common patterns
+- Implement proper pagination for list endpoints
+- Use filters and search functionality
+
+### Authentication & Permissions
+
+- Use JWT authentication (djangorestframework-simplejwt)
+- Implement proper permission classes
+- Use IsAuthenticated for protected endpoints
+- Implement custom permissions for business logic
+- Handle token refresh and blacklisting
+
+### API Documentation
+
+- Use drf-spectacular for API documentation
+- Write comprehensive docstrings for all endpoints
+- Document request/response schemas
+- Provide example requests and responses
+- Use proper HTTP status codes
+
+### Performance
+
+- Optimize serializer performance with select_related/prefetch_related
+- Implement caching for API responses
+- Use pagination to limit response size
+- Optimize database queries in serializers

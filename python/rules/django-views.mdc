@@ -1,0 +1,43 @@
+---
+description: Specific guidelines for Django views, focusing on class-based vs. function-based views, error handling, and request handling.
+globs: **/views.py
+---
+
+## Django Views Guidelines
+
+### View Types
+
+- Use Django's class-based views (CBVs) for complex API endpoints and CRUD operations
+- Prefer function-based views (FBVs) for simple logic and WebSocket consumers
+- Use DRF ViewSets for RESTful API endpoints
+- Implement APIView for custom API behavior
+
+### Error Handling
+
+- Implement comprehensive error handling at the view level
+- Use Django's built-in error handling mechanisms
+- Return appropriate HTTP status codes for API responses
+- Handle WebSocket connection errors gracefully
+- Use try-except blocks for business logic exceptions
+
+### Request Handling
+
+- Keep business logic in models and forms; keep views focused on request handling
+- Validate request data using DRF serializers
+- Implement proper authentication and authorization
+- Handle file uploads for media content
+- Process WebSocket messages asynchronously
+
+### Performance
+
+- Use select_related and prefetch_related for database queries
+- Implement caching for frequently accessed data
+- Use background tasks (Celery) for heavy operations
+- Optimize WebSocket message handling
+
+### Security
+
+- Validate all input data
+- Implement proper permission checks
+- Use CSRF protection for form submissions
+- Sanitize user inputs

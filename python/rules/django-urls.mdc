@@ -1,0 +1,41 @@
+---
+description: Guidelines for Django URL configurations, focusing on clear and RESTful URL patterns.
+globs: **/urls.py
+---
+
+## Django URLs Guidelines
+
+### URL Patterns
+
+- Use Django's URL dispatcher (urls.py) to define clear and RESTful URL patterns
+- Implement proper URL namespacing for different apps
+- Use descriptive URL patterns that reflect the resource
+- Implement versioned API URLs when needed
+
+### API URLs
+
+- Structure API URLs following REST conventions
+- Use DRF router for ViewSet URLs
+- Implement proper URL patterns for CRUD operations
+- Use nested URLs for related resources
+
+### WebSocket Routing
+
+- Configure WebSocket routing in routing.py files
+- Implement proper URL patterns for WebSocket consumers
+- Handle WebSocket connection URLs
+- Structure routing for different WebSocket applications
+
+### URL Configuration
+
+- Use include() for app-specific URLs
+- Implement proper URL parameter handling
+- Use path() and re_path() appropriately
+- Handle URL redirects and reverse lookups
+
+### Security
+
+- Validate URL parameters
+- Implement proper URL access controls
+- Use HTTPS URLs in production
+- Handle URL-based attacks (path traversal, etc.)

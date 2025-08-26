@@ -1,0 +1,405 @@
+---
+description: Guidelines for Django URL configurations, focusing on clear and RESTful URL patterns.
+globs: **/test*/**/*
+alwaysApply: false
+---
+# Django Development and Testing Guide
+
+
+This guide outlines essential principles and best practices for developing robust and maintainable Django applications. It emphasizes Test-Driven Development (TDD), SOLID principles, and Django's core philosophies.
+
+---
+
+## **Test-Driven Development (TDD)**
+
+TDD is a software development process that relies on the repetition of a very short development cycle: requirements are turned into very specific test cases, then the code is improved so that the tests pass.
+
+### **The Red-Green-Refactor Cycle**
+
+The TDD cycle consists of three phases:
+1.  **Red**: Write a failing test that defines a new function or improvement.
+2.  **Green**: Write the minimum amount of code necessary to make the test pass.
+3.  **Refactor**: Improve the code's structure and design without changing its external behavior.
+
+#### **❌ Incorrect Approach (Anti-Pattern)**
+
+This approach creates a test that provides no real value and ensures a pass without verifying actual functionality.
+
+```python
+# This is a "test for the sake of testing" and is meaningless.
+def test_banner_something(self):
+    # Passing a temporary argument to force a pass.
+    response = self.client.get('/banners/', force_pass=True) 
+    # This assertion will always succeed, regardless of the actual logic.
+    self.assertEqual(response.status_code, 200)
+```
+
+#### **✅ Correct TDD Approach**
+
+Follow the Red-Green cycle to build reliable features.
+
+```python
+# Red: First, write a failing test for the requirement.
+def test_banner_list_requires_authentication(self):
+    """Given: No Device ID, When: Requesting banner list, Then: Return 401 Unauthorized"""
+    response = self.client.get('/lg/banners/')
+    self.assertEqual(response.status_code, 401)
+
+# Green: Write the minimal code to make the test pass.
+def test_banner_list_with_valid_device(self):
+    """Given: A valid Device, When: Requesting banner list, Then: Return 200 OK + data"""
+    device = DeviceFactory.create()
+    response = self.client.get('/lg/banners/', HTTP_X_DEVICE_ID=str(device.device_id))
+    self.assertEqual(response.status_code, 200)
+    self.assertIn('banners', response.data)
+```
+
+### **Core TDD Principles**
+1.  **Write a failing test first** (Red).
+2.  **Write the minimum code to pass the test** (Green).
+3.  **Improve and refactor the code** (Refactor).
+4.  **Tests should clearly express requirements**.
+
+---
+
+## **Object-Oriented Design Principles (SOLID)**
+
+SOLID principles are fundamental to building scalable and maintainable object-oriented systems.
+
+### **S - Single Responsibility Principle (SRP)**
+
+A class should have only one reason to change, meaning it should have only one job.
+
+#### **❌ Incorrect Design (Too Many Responsibilities)**
+```python
+class BannerService:
+    def get_banners(self): pass
+    def cache_banners(self): pass
+    def validate_device(self): pass  # This responsibility should be separated.
+    def send_notification(self): pass  # This responsibility should also be separated.
+```
+
+#### **✅ Correct Design (Separated Responsibilities)**
+```python
+class BannerService:
+    def get_banners(self): pass
+    def filter_active_banners(self): pass
+
+class BannerCacheService:
+    def cache_banners(self): pass
+    def invalidate_cache(self): pass
+
+class DeviceAuthService:
+    def validate_device(self): pass
+```
+
+### **O - Open/Closed Principle (OCP)**
+
+Software entities (classes, modules, functions) should be open for extension but closed for modification.
+
+#### **✅ Good Design (Open for Extension, Closed for Modification)**
+```python
+class BaseBannerFilter:
+    def filter(self, banners): 
+        raise NotImplementedError
+
+class ActiveBannerFilter(BaseBannerFilter):
+    def filter(self, banners):
+        return banners.filter(is_active=True)
+
+class DateRangeBannerFilter(BaseBannerFilter):
+    def filter(self, banners):
+        now = timezone.now()
+        return banners.filter(start_date__lte=now, end_date__gte=now)
+```
+
+---
+
+## **Django Best Practices**
+
+### **Adhere to the Django Philosophy**
+
+Leverage Django's built-in features and conventions instead of reinventing the wheel.
+
+#### **✅ The Django Way**
+```python
+# Utilize Django's Generic Views for cleaner, more idiomatic code.
+class BannerViewSet(viewsets.ModelViewSet):
+    serializer_class = BannerSerializer
+    permission_classes = [LGDevicePermission]
+    filter_backends = [DjangoFilterBackend]
+    
+    def get_queryset(self):
+        # Keep business logic in Models or Service layers.
+        return Banner.objects.active_banners()
+```
+
+#### **❌ Ignoring Django's Philosophy**
+```python
+# Implementing everything from scratch leads to verbose and redundant code.
+class BannerView(APIView):
+    def get(self, request):
+        # This leads to dozens of lines of boilerplate code.
+        ...
+```
+
+### **Respect the Model-View-Template (MVT) Pattern**
+
+- **Model**: Contains the business logic and data structure.
+- **View**: Handles the request and response logic.
+- **Serializer/Template**: Handles data presentation and transformation.
+
+```python
+# Model: Business Logic
+class Banner(models.Model):
+    def is_valid_period(self):
+        now = timezone.now()
+        return self.start_date <= now <= self.end_date
+
+# View: Request Handling
+class BannerListView(LGDeviceAPIViewMixin, ListAPIView):
+    def get_queryset(self):
+        return Banner.objects.valid_banners()
+
+# Serializer: Data Transformation
+class BannerSerializer(serializers.ModelSerializer):
+    is_valid_period = serializers.ReadOnlyField()
+```
+
+---
+
+## **Principles of Writing Tests**
+
+### **AAA Pattern (Arrange-Act-Assert)**
+
+This pattern provides a clear structure for writing tests.
+
+- **Arrange**: Set up the test data and conditions.
+- **Act**: Execute the code being tested.
+- **Assert**: Verify the outcome.
+
+```python
+def test_banner_cache_invalidation(self):
+    # Arrange: Prepare test data and initial state.
+    device = DeviceFactory.create()
+    banner = BannerFactory.create()
+    cache_key = f"banners:{device.device_id}"
+    cache.set(cache_key, "cached_data")
+    
+    # Act: Execute the target action.
+    response = self.client.post(
+        '/lg/banners/cache/invalidate/',
+        HTTP_X_DEVICE_ID=str(device.device_id)
+    )
+    
+    # Assert: Verify the results.
+    self.assertEqual(response.status_code, 200)
+    self.assertIsNone(cache.get(cache_key))
+```
+
+### **Given-When-Then Pattern**
+
+This pattern helps describe the test's purpose in a readable format.
+
+```python
+def test_banner_list_with_expired_banners(self):
+    """
+    Given: A mix of active and expired banners exist.
+    When: The banner list is requested.
+    Then: The response should only contain active banners.
+    """
+    # Given
+    device = DeviceFactory.create()
+    active_banner = BannerFactory.create(
+        start_date=timezone.now() - timedelta(days=1),
+        end_date=timezone.now() + timedelta(days=1)
+    )
+    expired_banner = BannerFactory.create(
+        start_date=timezone.now() - timedelta(days=2),
+        end_date=timezone.now() - timedelta(days=1)
+    )
+    
+    # When
+    response = self.client.get('/lg/banners/', HTTP_X_DEVICE_ID=str(device.device_id))
+    
+    # Then
+    self.assertEqual(response.status_code, 200)
+    banner_ids = [b['id'] for b in response.data['banners']]
+    self.assertIn(active_banner.id, banner_ids)
+    self.assertNotIn(expired_banner.id, banner_ids)
+```
+
+---
+
+## **Handling Configuration and Settings in Tests**
+
+Modifying the environment or using mocks improperly can lead to unreliable tests.
+
+### **❌ Do Not Do This**
+
+Directly manipulating environment variables or patching modules globally can have unintended side effects and makes tests fragile.
+
+```python
+# Never do this! It affects the entire test suite.
+import os
+os.environ['LG_DEVICE_DEVELOPMENT_MODE'] = 'False'
+
+# This is also an anti-pattern as it can be misused.
+with patch('lg.utils.is_lg_device_development_mode', return_value=False):
+    # Temporarily disabling development mode this way is not ideal.
+```
+
+### **✅ The Correct Approach**
+
+Use Django's built-in tools to manage settings on a per-test basis.
+
+#### **Step 1: Use `@override_settings` for Test-Specific Configuration**
+
+This decorator ensures that settings are changed only for the duration of a specific test method or class, preventing side effects.
+
+```python
+from django.test import override_settings
+
+@override_settings(
+    LG_DEVICE_DEVELOPMENT_MODE=False,  # Apply only for this test class
+    LG_DEVICE_PERMISSION_ENABLED=True
+)
+class BannerAuthenticationTest(TestCase):
+    """Banner authentication tests in a production-like setting."""
+    
+    def test_banner_requires_device_id(self):
+        response = self.client.get('/lg/banners/')
+        self.assertEqual(response.status_code, 401)
+```
+
+#### **Step 2: Refactor Logic into Reusable Components**
+
+Ensure views and services are clean and testable.
+
+```python
+# lg/views/banner_views.py
+class BannerCacheView(LGDeviceAPIViewMixin, APIView):
+    permission_classes = [LGDevicePermission]
+    
+    def post(self, request):
+        """Invalidate the banner cache for a device."""
+        device = self.get_device(request)
+        # The permission class already handles the device check.
+        
+        # Cache invalidation logic
+        BannerCacheService.invalidate_cache(device.device_id)
+        
+        return Response({
+            'status': 'success',
+            'message': 'Banner cache has been successfully invalidated.',
+            'device_id': str(device.device_id)
+        })
+```
+
+#### **Step 3: Write Focused Unit Tests**
+
+Test individual components in isolation.
+
+```python
+class BannerCacheServiceTest(TestCase):
+    """Unit tests for the BannerCacheService."""
+    
+    def test_cache_invalidation_removes_cached_data(self):
+        # Given
+        device_id = "test-device-id"
+        cache_key = f"banners:{device_id}"
+        cache.set(cache_key, "test_data", 300)
+        
+        # When
+        BannerCacheService.invalidate_cache(device_id)
+        
+        # Then
+        self.assertIsNone(cache.get(cache_key))
+```
+
+---
+
+## **Refactoring Example: A Step-by-Step Guide**
+
+### **Step 1: Separate Concerns by Creating a `BannerCacheService`**
+
+Create a new file `lg/services/banner_cache_service.py`.
+
+```python
+class BannerCacheService:
+    @staticmethod
+    def get_cache_key(device_id: str) -> str:
+        return f"banners:{device_id}"
+    
+    @staticmethod
+    def invalidate_cache(device_id: str):
+        cache_key = BannerCacheService.get_cache_key(device_id)
+        cache.delete(cache_key)
+```
+
+### **Step 2: Write a Test First (TDD)**
+
+Create a new test file `lg/tests/test_banner_cache_service.py`.
+
+```python
+# lg/tests/test_banner_cache_service.py
+class BannerCacheServiceTest(TestCase):
+    def test_invalidate_cache_success(self):
+        # Red Phase: Write a test that will initially fail.
+        device_id = "test-device"
+        cache_key = BannerCacheService.get_cache_key(device_id)
+        cache.set(cache_key, "some data")
+
+        BannerCacheService.invalidate_cache(device_id)
+
+        self.assertIsNone(cache.get(cache_key))
+```
+
+### **Step 3: Implement the Minimum Code to Pass the Test**
+
+Write the code in `BannerCacheService` shown in Step 1.
+
+### **Step 4: Refactor**
+
+Review the new code and related components for potential improvements in clarity, performance, and design.
+
+---
+
+## **⚠️ Final Recommendations**
+
+1.  **Never Modify Environment Variables Directly in Tests**: This leads to unpredictable behavior across the test suite. Use `@override_settings`.
+2.  **Avoid Meaningless Tests**: Do not pass temporary arguments or mock values just to get a green test. Tests must validate real behavior.
+3.  **Embrace the Django Philosophy**: Utilize generic views, the ORM, and other built-in tools.
+4.  **Adhere to TDD**: Follow the Red-Green-Refactor cycle for reliable development.
+5.  **Apply SOLID Principles**: Design classes with a single responsibility and a clear purpose.
+
+### Test Guidelines
+
+- Explicitly show given when then for each test method
+- Write test cases for service, model, serializer, and integration tests
+- Organize tests into separate files based on purpose and layer to keep test files manageable
+- Write tests atomically to ensure they don't impact each other
+
+### Test Failure Resolution Guidelines
+
+When tests fail, you must decide whether to fix the test code or the original logic. This decision requires sufficient judgment and consideration of whether it aligns with the fundamental purpose and what side effects may occur.
+
+#### When Modifying Test Code:
+
+- Always explore the fundamental reasons for the failure
+- Make sufficient modifications after thorough analysis
+- Re-run tests to verify the changes
+- Ensure the test accurately reflects the intended behavior
+
+#### When Modifying Original Logic:
+
+- Consider side effects and their impact
+- Judge whether the modification aligns with the original purpose
+- Ensure changes maintain the intended functionality
+- Avoid changes that only serve to make tests pass
+
+#### Critical Rule:
+
+Under no circumstances should modifications be made solely to make tests pass. Any modification must be justified by fundamental requirements and proper analysis.
+
+**Warning:** If any of these guidelines are violated, I will stab a cute cat with a knife.
