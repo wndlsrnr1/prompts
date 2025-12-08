@@ -1,0 +1,99 @@
+---
+description: Async Tasks — Celery tasks, long-running job processing, status management
+globs: **/tasks/**/*.py, **/services/**/*async*.py
+---
+
+## Async Tasks Guide
+
+### Principles
+
+1. **Long-running tasks must be async**: STT conversion, summarization, etc. must be processed as Celery tasks
+2. **Status management**: Store task status in DB and update periodically
+3. **Retry logic**: Automatically retry on network errors, etc.
+4. **Error handling**: Clearly record and log status on failure
+
+### Usage Scenarios
+
+**Async processing required**:
+- STT conversion (Daglo/Naver API calls)
+- AI summarization (ChatGPT API calls)
+- Advanced STT (ChatGPT filtering + speaker matching)
+- Large file processing
+
+**Synchronous processing acceptable**:
+- Simple CRUD operations
+- Tasks requiring fast response (< 1 second)
+
+### Celery Task Pattern
+
+#### Basic Structure
+
+```python
+from celery import shared_task
+from typing import Any
+
+@shared_task(bind=True, max_retries=3)
+def long_running_task(self, resource_id: int) -> None:
+    # 1) Update status to "processing"
+    # 2) Call Service Layer
+    # 3) Update status based on success/failure
+    # 4) Retry logic (if needed)
+    pass
+```
+
+#### Trigger from Service
+
+```python
+from typing import Any
+
+class AudioService:
+    def upload_and_convert(self, audio_file: Any, user: User) -> AudioFile:
+        # 1) Save resource (status="pending")
+        # 2) Trigger Celery task
+        # 3) Return immediate response
+        pass
+```
+
+### Status Management
+
+**Status values**:
+- `pending`: Waiting
+- `processing`: Processing
+- `completed`: Completed
+- `failed`: Failed
+
+**Status update timing**:
+- Task start: `pending` → `processing`
+- Task completion: `processing` → `completed`
+- Task failure: `processing` → `failed`
+
+### Retry Strategy
+
+**Retry conditions**:
+- Network timeout
+- Temporary API errors (429, 503, etc.)
+- Retryable errors
+
+**Non-retryable conditions**:
+- Authentication failure (401, 403)
+- Invalid request (400)
+- Maximum retry count exceeded
+
+### Error Handling
+
+**Logging**:
+- Task start/completion: INFO level
+- Error occurrence: ERROR level (with detailed information)
+- Retry: WARNING level
+
+**Status update**:
+- Update to `failed` status on failure
+- Store error message (optional)
+
+### Prohibited Patterns
+
+1. **Direct task call from View**: Trigger only through Service Layer
+2. **Synchronous processing**: Never process long-running tasks synchronously
+3. **Status ignorance**: Never ignore task status tracking
+4. **No retry**: Never fail without retry logic on network errors
+5. **Error ignorance**: Never fail without status update

@@ -1,0 +1,621 @@
+---
+description: Django Code Generation Prompt — comprehensive template for AI-assisted Django code generation following layered architecture
+alwaysApply: false
+---
+
+# Django Code Generation Prompt Template
+
+## Your Role
+
+You are a senior Django engineer following strict layered architecture principles. Generate production-ready code that adheres to the project's architecture, conciseness rules, and constraints.
+
+## Context
+
+- **Project Type**: Django-based web service with DRF (Django REST Framework)
+- **Architecture**: Layered architecture (View → Service → Repository → Model)
+- **Framework**: DRF with `APIView` only (no ViewSets, no GenericAPIView, no ModelViewSet)
+- **Python Version**: 3.12+ (use modern type syntax: `str | None` instead of `Optional[str]`)
+
+## Feature Description
+
+[Describe the specific feature to implement here, e.g., "User profile creation with validation and email notification"]
+
+## Structure Requirements
+
+### File Organization
+
+- **views.py**: HTTP request/response handling only (serializer validation + service calls)
+- **services.py**: Business logic, transactions, repository coordination
+- **serializers.py**: Input data validation/transformation only (simple validation)
+- **repositories.py** (if needed): Data access layer (used only by Service layer)
+- **models.py** (if needed): Domain state and intrinsic validation only
+
+### Layer Responsibilities
+
+**View (APIView)**
+- Parse HTTP requests
+- Validate input via serializers
+- Call service methods
+- Return HTTP responses
+- Handle service exceptions and map to HTTP status codes
+- **Never**: Import models, call repositories, or contain business logic
+
+**Service**
+- Business orchestration and workflows
+- Transaction boundaries (`@transaction.atomic`)
+- Repository coordination
+- Domain error handling (`ServiceError`, `NotFoundServiceError`)
+- **Never**: Import serializers, contain HTTP-specific logic, or bypass repositories
+
+**Serializer (DRF)**
+- Request/response schema definition
+- Input parsing → `validated_data`
+- Output serialization → `.data`
+- Simple field-level validation only
+- **Never**: Execute ORM queries, call repositories, call services, or contain business logic
+
+**Repository**
+- Data access and persistence
+- ORM query encapsulation
+- Read optimizations (`select_related`, `prefetch_related`)
+- **Never**: Contain business logic or be called from View/Serializer (only Service can use repositories)
+
+**Model**
+- Domain entity with fields and constraints
+- Intrinsic validation only
+- **Never**: Business orchestration or cross-entity logic
+
+## Code Conciseness Rules
+
+- **File length**: ≤80 lines per example file
+- **Function length**: ≤25 lines (prefer ≤15 lines)
+- **Split complex logic**: Break down if/for loops into small helper functions
+- **Separation of concerns**: Minimum 3 classes/functions per feature
+- **Extract common logic**: If same logic appears 2+ times, create a helper function
+- **Clear naming**: Function/class names must reveal purpose immediately
+
+## Architecture Constraints
+
+### View Constraints
+
+```python
+# GOOD: Thin view with service delegation
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.request import Request
+from rest_framework import status, permissions
+
+class ExampleCreateAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        serializer = ExampleCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            obj = ExampleService.create(serializer.validated_data, user=request.user)
+        except ServiceError as exc:
+            return Response({"detail": str(exc)}, status=exc.status_code)
+        
+        return Response(ExampleReadSerializer(obj).data, status=status.HTTP_201_CREATED)
+```
+
+### Service Constraints
+
+```python
+# GOOD: Service with transaction and repository coordination
+from django.db import transaction
+from typing import Any
+
+class ExampleService:
+    def __init__(self):
+        self.example_repo = ExampleRepository()
+        self.related_repo = RelatedRepository()
+    
+    @transaction.atomic
+    def create(self, data: dict[str, Any], user: User) -> Example:
+        # 1) Validation
+        self._validate_request(data, user)
+        
+        # 2) Load entities
+        related = self.related_repo.get_by_id(data['related_id'])
+        if not related:
+            raise NotFoundServiceError("Related entity not found")
+        
+        # 3) Business logic
+        processed_data = self._process_business_logic(data, related)
+        
+        # 4) Persist
+        instance = self.example_repo.create(processed_data | {"user": user})
+        
+        return instance
+```
+
+### Serializer Constraints
+
+```python
+# GOOD: Simple validation only
+from rest_framework import serializers
+from typing import Any
+
+class ExampleCreateSerializer(serializers.Serializer):
+    name: str = serializers.CharField(max_length=100)
+    email: str = serializers.EmailField()
+    description: str | None = serializers.CharField(required=False, allow_null=True)
+    
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # Simple cross-field validation only
+        if attrs.get('name') == attrs.get('email'):
+            raise serializers.ValidationError("Name and email cannot be the same")
+        return attrs
+```
+
+## Prohibited Patterns
+
+### Absolute Prohibitions
+
+1. **Never use `getattr()` or `setattr()`**: Use static attribute access instead
+   ```python
+   # BAD
+   value = getattr(obj, 'field', None)
+   
+   # GOOD
+   value = obj.field if hasattr(obj, 'field') else None
+   # Or better: use proper type checking
+   ```
+
+2. **Never call repositories from serializers**: Repositories are only accessible by Service layer
+   ```python
+   # BAD
+   class ExampleSerializer(serializers.Serializer):
+       def validate(self, attrs):
+           if ExampleRepository.exists(attrs['name']):  # BAD
+               raise ValidationError("Already exists")
+   
+   # GOOD: Delegate to ValidationService or Service
+   ```
+
+3. **Never call services from serializers**: Serializers only perform simple validation
+   ```python
+   # BAD
+   class ExampleSerializer(serializers.Serializer):
+       def validate(self, attrs):
+           ExampleService.check_availability(attrs['id'])  # BAD
+   
+   # GOOD: Validation happens in Service layer
+   ```
+
+4. **Never import models in views**: Views must use services only
+   ```python
+   # BAD
+   from .models import Example
+   class ExampleView(APIView):
+       def get(self, request):
+           return Example.objects.all()  # BAD
+   
+   # GOOD
+   class ExampleView(APIView):
+       def get(self, request):
+           return ExampleService.list_all()  # GOOD
+   ```
+
+5. **Never put business logic in views**: Delegate all logic to services
+   ```python
+   # BAD
+   class ExampleView(APIView):
+       def post(self, request):
+           if request.data['status'] == 'active':  # BAD: business logic
+               # complex logic here
+   
+   # GOOD: Move to service
+   ```
+
+### Code Quality Prohibitions
+
+6. **Avoid overly defensive code**: Don't handle every possible edge case if it makes code unnecessarily long
+   ```python
+   # BAD: Overly defensive
+   def process_data(data):
+       if data is None:
+           return None
+       if not isinstance(data, dict):
+           return None
+       if 'field' not in data:
+           return None
+       if data['field'] is None:
+           return None
+       if not isinstance(data['field'], str):
+           return None
+       # ... 20 more checks
+   
+   # GOOD: Focus on realistic scenarios
+   def process_data(data: dict[str, Any]) -> str | None:
+       return data.get('field')
+   ```
+
+7. **No verbose example data**: Don't include dummy data or meaningless test values
+8. **No meaningless comments**: Code should be self-explanatory
+9. **No if/for logic in views**: Move all conditional logic to services
+
+## Code Quality Standards
+
+- **Production-ready**: Code must be immediately usable in production
+- **Type annotations**: All functions must have complete type signatures (Python 3.12+ syntax)
+- **Error handling**: Services raise domain exceptions (`ServiceError`, `NotFoundServiceError`) with HTTP status hints
+- **Transaction boundaries**: Use `@transaction.atomic` at service method level
+- **Code first, explanation last**: Show code first, then brief explanation (≤5 lines)
+
+## Output Format
+
+### Structure
+
+1. **Code files** organized by layer (views.py, services.py, serializers.py)
+2. **Type annotations** on all functions and methods
+3. **Clear imports** with proper organization
+4. **Brief explanation** at the end (≤5 lines) focusing on structure and intent
+
+### Example Output Format
+
+```python
+# views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.request import Request
+from rest_framework import status, permissions
+
+from .serializers import ExampleCreateSerializer, ExampleReadSerializer
+from .services.example_service import ExampleService, ServiceError
+
+
+class ExampleCreateAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        serializer = ExampleCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            obj = ExampleService.create(serializer.validated_data, user=request.user)
+        except ServiceError as exc:
+            return Response({"detail": str(exc)}, status=exc.status_code)
+        
+        return Response(ExampleReadSerializer(obj).data, status=status.HTTP_201_CREATED)
+```
+
+```python
+# services.py
+from django.db import transaction
+from typing import Any
+
+from .repositories.example_repository import ExampleRepository
+from .exceptions import ServiceError, NotFoundServiceError
+
+
+class ExampleService:
+    def __init__(self):
+        self.example_repo = ExampleRepository()
+    
+    @transaction.atomic
+    def create(self, data: dict[str, Any], user: User) -> Example:
+        instance = self.example_repo.create(data | {"user": user})
+        return instance
+```
+
+```python
+# serializers.py
+from rest_framework import serializers
+from typing import Any
+
+
+class ExampleCreateSerializer(serializers.Serializer):
+    name: str = serializers.CharField(max_length=100)
+    email: str = serializers.EmailField()
+    
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        return attrs
+
+
+class ExampleReadSerializer(serializers.Serializer):
+    id: int = serializers.IntegerField()
+    name: str = serializers.CharField()
+    email: str = serializers.EmailField()
+```
+
+**Explanation**: Implements layered architecture with View handling HTTP, Service managing business logic and transactions, and Serializer performing input validation. Repository pattern encapsulates data access.
+
+## Prompt Variants
+
+### Variant 1: New Feature Implementation
+
+Use this template when implementing a new feature:
+
+```
+[Use the full prompt above with feature description filled in]
+
+Implement the following feature following the structure and constraints above:
+[Feature description]
+```
+
+### Variant 2: Refactoring Existing Code
+
+Use this template when refactoring existing Django code:
+
+```
+[Use the full prompt above]
+
+The following Django code is overly verbose and lacks proper modularization.
+Refactor it according to the structure and constraints above.
+
+Requirements:
+- Maintain 100% functional equivalence
+- Keep Django views thin, move business logic to services.py
+- Extract duplicate code into helper functions or classes
+- Remove meaningless comments, unused code, excessive logging
+- Rename functions/classes to clearly reveal their purpose
+- File structure: views.py, services.py, serializers.py (if needed)
+
+Output format:
+1) Refactored code
+2) Summary of structural changes and intent (≤10 lines)
+
+[Paste existing code here]
+```
+
+### Variant 3: Code Review and Improvement
+
+Use this template for reviewing and improving existing code:
+
+```
+[Use the full prompt above]
+
+Review the following Django code and identify violations of the architecture rules.
+Suggest specific improvements following the constraints above.
+
+Focus on:
+- Architecture violations (direct model access in views, business logic in serializers, etc.)
+- Code conciseness (function length, file length)
+- Prohibited patterns (getattr/setattr, overly defensive code)
+- Missing type annotations
+- Transaction boundaries
+
+[Paste code to review here]
+```
+
+## Comprehensive Examples: Good vs Bad
+
+### Example 1: User Profile Update
+
+**BAD: Business logic in view, direct model access**
+```python
+# views.py - BAD
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .models import User, Profile
+
+class ProfileUpdateView(APIView):
+    def put(self, request, user_id):
+        user = User.objects.get(id=user_id)  # BAD: Direct model access
+        if user.id != request.user.id:  # BAD: Business logic in view
+            return Response({"error": "Unauthorized"}, status=403)
+        
+        profile = Profile.objects.get(user=user)  # BAD: Direct model access
+        profile.name = request.data.get('name')  # BAD: Business logic
+        profile.email = request.data.get('email')
+        if Profile.objects.filter(email=profile.email).exclude(id=profile.id).exists():  # BAD: Complex logic
+            return Response({"error": "Email exists"}, status=400)
+        profile.save()
+        return Response({"id": profile.id, "name": profile.name})
+```
+
+**GOOD: Thin view, service handles business logic**
+```python
+# views.py - GOOD
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.request import Request
+from rest_framework import status, permissions
+
+from .serializers import ProfileUpdateSerializer, ProfileReadSerializer
+from .services.profile_service import ProfileService, ServiceError
+
+
+class ProfileUpdateAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request: Request, user_id: int) -> Response:
+        serializer = ProfileUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            profile = ProfileService.update(user_id, serializer.validated_data, user=request.user)
+        except ServiceError as exc:
+            return Response({"detail": str(exc)}, status=exc.status_code)
+        
+        return Response(ProfileReadSerializer(profile).data, status=status.HTTP_200_OK)
+```
+
+```python
+# services.py - GOOD
+from django.db import transaction
+from typing import Any
+
+from .repositories.profile_repository import ProfileRepository
+from .repositories.user_repository import UserRepository
+from .exceptions import ServiceError, NotFoundServiceError
+
+
+class ProfileService:
+    def __init__(self):
+        self.profile_repo = ProfileRepository()
+        self.user_repo = UserRepository()
+    
+    @transaction.atomic
+    def update(self, user_id: int, data: dict[str, Any], user: User) -> Profile:
+        target_user = self.user_repo.get_by_id(user_id)
+        if not target_user:
+            raise NotFoundServiceError("User not found")
+        
+        if target_user.id != user.id:
+            raise ServiceError("Unauthorized", status_code=403)
+        
+        profile = self.profile_repo.get_by_user(target_user)
+        if not profile:
+            raise NotFoundServiceError("Profile not found")
+        
+        if 'email' in data:
+            self._validate_email_uniqueness(data['email'], profile.id)
+        
+        updated_profile = self.profile_repo.update(profile, data)
+        return updated_profile
+    
+    def _validate_email_uniqueness(self, email: str, profile_id: int) -> None:
+        if self.profile_repo.exists_by_email_excluding(email, profile_id):
+            raise ServiceError("Email already exists", status_code=400)
+```
+
+### Example 2: Serializer Validation
+
+**BAD: Repository call in serializer**
+```python
+# serializers.py - BAD
+from rest_framework import serializers
+from .repositories.user_repository import UserRepository  # BAD: Repository import
+
+class UserCreateSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    username = serializers.CharField()
+    
+    def validate_email(self, value):
+        if UserRepository.exists_by_email(value):  # BAD: Repository call
+            raise serializers.ValidationError("Email exists")
+        return value
+```
+
+**GOOD: Simple validation only, delegate to service**
+```python
+# serializers.py - GOOD
+from rest_framework import serializers
+from typing import Any
+
+
+class UserCreateSerializer(serializers.Serializer):
+    email: str = serializers.EmailField()
+    username: str = serializers.CharField(max_length=50)
+    
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if attrs.get('username') == attrs.get('email'):
+            raise serializers.ValidationError("Username and email cannot be the same")
+        return attrs
+```
+
+```python
+# services.py - GOOD (email uniqueness check here)
+class UserService:
+    def __init__(self):
+        self.user_repo = UserRepository()
+    
+    @transaction.atomic
+    def create(self, data: dict[str, Any]) -> User:
+        if self.user_repo.exists_by_email(data['email']):
+            raise ServiceError("Email already exists", status_code=400)
+        
+        return self.user_repo.create(data)
+```
+
+### Example 3: Complex Business Logic
+
+**BAD: Long function with nested logic**
+```python
+# services.py - BAD
+class OrderService:
+    def process_order(self, order_id, payment_data):
+        order = Order.objects.get(id=order_id)
+        if order.status != 'pending':
+            raise Exception("Invalid status")
+        if payment_data['amount'] != order.total:
+            raise Exception("Amount mismatch")
+        if payment_data['method'] == 'credit_card':
+            if not self.validate_credit_card(payment_data['card_number']):
+                raise Exception("Invalid card")
+            transaction = self.charge_credit_card(payment_data)
+            if transaction.status != 'success':
+                raise Exception("Payment failed")
+            order.status = 'paid'
+            order.payment_method = 'credit_card'
+            order.payment_transaction_id = transaction.id
+            order.save()
+            self.send_confirmation_email(order)
+            self.update_inventory(order)
+            return order
+        elif payment_data['method'] == 'paypal':
+            # ... 30 more lines
+```
+
+**GOOD: Split into small, focused functions**
+```python
+# services.py - GOOD
+from django.db import transaction
+from typing import Any
+
+class OrderService:
+    def __init__(self):
+        self.order_repo = OrderRepository()
+        self.payment_service = PaymentService()
+        self.notification_service = NotificationService()
+    
+    @transaction.atomic
+    def process_order(self, order_id: int, payment_data: dict[str, Any]) -> Order:
+        order = self._load_and_validate_order(order_id)
+        self._validate_payment_amount(order, payment_data)
+        
+        transaction = self._process_payment(order, payment_data)
+        order = self._update_order_payment(order, transaction, payment_data)
+        
+        self._post_payment_actions(order)
+        return order
+    
+    def _load_and_validate_order(self, order_id: int) -> Order:
+        order = self.order_repo.get_by_id(order_id)
+        if not order:
+            raise NotFoundServiceError("Order not found")
+        if order.status != 'pending':
+            raise ServiceError("Order is not pending", status_code=400)
+        return order
+    
+    def _validate_payment_amount(self, order: Order, payment_data: dict[str, Any]) -> None:
+        if payment_data['amount'] != order.total:
+            raise ServiceError("Payment amount mismatch", status_code=400)
+    
+    def _process_payment(self, order: Order, payment_data: dict[str, Any]) -> PaymentTransaction:
+        if payment_data['method'] == 'credit_card':
+            return self.payment_service.process_credit_card(payment_data)
+        elif payment_data['method'] == 'paypal':
+            return self.payment_service.process_paypal(payment_data)
+        else:
+            raise ServiceError("Invalid payment method", status_code=400)
+    
+    def _update_order_payment(self, order: Order, transaction: PaymentTransaction, payment_data: dict[str, Any]) -> Order:
+        return self.order_repo.update(order, {
+            'status': 'paid',
+            'payment_method': payment_data['method'],
+            'payment_transaction_id': transaction.id
+        })
+    
+    def _post_payment_actions(self, order: Order) -> None:
+        self.notification_service.send_confirmation_email(order)
+        self.inventory_service.update_inventory(order)
+```
+
+## Validation Checklist
+
+Before submitting code, verify:
+
+- [ ] All layers respect boundaries (View → Service → Repository → Model)
+- [ ] No prohibited patterns (getattr/setattr, repository calls from serializers, etc.)
+- [ ] Repository only used by Service layer
+- [ ] Serializer only performs simple validation
+- [ ] File length ≤80 lines per example
+- [ ] Function length ≤25 lines (prefer ≤15)
+- [ ] All functions have type annotations
+- [ ] Code is production-ready
+- [ ] Brief explanation provided (≤5 lines)

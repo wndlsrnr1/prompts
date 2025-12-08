@@ -1,0 +1,35 @@
+---
+alwaysApply: true
+---
+
+## Dynamic Rule Lookup
+
+Before implementing any feature, service, or logic:
+
+1. **Identify the implementation context**: What are you building? (API endpoint, service method, model, test, middleware, etc.)
+
+2. **Fetch relevant rules**: Use the `fetch_rules` tool to dynamically load applicable guidelines:
+   - For Django API development: `django-development`, `django-rest-framework`, `django-views`
+   - For data models: `django-models`
+   - For business logic: `django-development`, `django-services`, `performance-optimization`
+   - For service layer: `django-services`, `django-development`
+   - For testing: `django-test`, `role-member`
+   - For security features: `security`
+   - For forms (rare): `django-form`
+   - For middleware: `django-middleware`
+   - For URL routing: `django-urls`
+   - For performance concerns: `performance-optimization`
+   - For team workflow: `role-member`, `role-reader`
+
+3. **Apply rules contextually**: Don't just follow rules blindly - adapt them to your specific implementation context.
+
+### Rule Selection Matrix
+- **API Controllers** → `django-development` + `django-rest-framework` + `django-views`
+- **Services/Business Logic** → `django-services` + `django-development` + `performance-optimization`
+- **Service Layer Methods** → `django-services` + `django-development`
+- **Models** → `django-models`
+- **Tests** → `django-test` + `role-member`
+- **Security Features** → `security` + `django-development`
+- **Middleware** → `django-middleware`
+
+**Always think: What am I implementing? What rules apply to this context?**

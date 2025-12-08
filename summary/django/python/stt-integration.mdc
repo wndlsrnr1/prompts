@@ -1,0 +1,106 @@
+---
+description: STT API Integration — Daglo/Naver STT API integration patterns, speaker separation, Advanced STT
+globs: **/services/**/*stt*.py, **/clients/**/*stt*.py
+---
+
+## STT API Integration Guide
+
+### Integration Principles
+
+1. **Service Layer only**: STT API calls must be performed only in Service Layer
+2. **Provider abstraction**: Support multiple providers (Daglo, Naver, etc.)
+3. **Error handling**: Proper error handling and retry logic on API failure
+4. **Async processing**: STT conversion is a long-running task and must be processed asynchronously
+5. **Configuration management**: Manage API keys and provider selection via Django settings
+
+### STT Client Structure
+
+**Client Factory pattern**:
+- `STTClientFactory.create(provider: str) -> STTClient`: Return appropriate client based on settings
+- Support multiple providers (Daglo, Naver, etc.)
+
+**Base Client interface**:
+- `transcribe(audio_path: str) -> STTResult`: Basic STT conversion
+- `transcribe_with_speakers(audio_path: str) -> STTResultWithSpeakers`: Speaker-separated STT conversion
+
+**Implementation classes**:
+- `DagloSTTClient`: Daglo API client
+- `NaverSTTClient`: Naver API client
+
+### STT Service Pattern
+
+**Basic STT Service**:
+- Pipeline: `validate → load audio → call STT API → save result`
+- Status management: `pending` → `processing` → `completed`/`failed`
+- Error handling: Update status to `failed` on API failure
+
+**Advanced STT Service**:
+- Pipeline: `STT with speakers → ChatGPT filtering → Speaker matching → save`
+- ChatGPT filtering: Clean text and remove unnecessary parts
+- Speaker matching: Speaker separation based on participant names
+
+### Async Processing
+
+**Celery task pattern**:
+- `@shared_task(bind=True, max_retries=3)`: Retryable task
+- Call Service Layer to perform actual logic
+- Retry logic: Exponential backoff
+- Update status to `failed` after maximum retries
+
+```python
+from celery import shared_task
+from typing import Any
+
+@shared_task(bind=True, max_retries=3)
+def convert_audio_async(self, audio_file_id: int) -> None:
+    """Async STT conversion task"""
+    stt_service = STTService()
+    try:
+        stt_service.convert_audio(audio_file_id)
+    except Exception as e:
+        logger.error(f"STT conversion failed: {str(e)}")
+        raise
+```
+
+### Error Handling
+
+**Error classification**:
+- **Retryable**: Timeout, Rate limit (429), Server error (503)
+- **Non-retryable**: Authentication failure (401, 403), Invalid request (400)
+
+**Error handling flow**:
+- API error occurs → Logging → Check retry possibility → Retry or fail
+
+### 설정 관리
+
+```python
+# settings.py
+STT_PROVIDER = env("STT_PROVIDER", default="naver")  # "daglo" or "naver"
+DAGLO_API_KEY = env("DAGLO_API_KEY", default="")
+NAVER_API_KEY = env("NAVER_API_KEY", default="")
+
+# STT API 설정
+STT_MAX_FILE_SIZE = env.int("STT_MAX_FILE_SIZE", default=100 * 1024 * 1024)  # 100MB
+STT_TIMEOUT = env.int("STT_TIMEOUT", default=300)  # 5 minutes
+STT_RETRY_COUNT = env.int("STT_RETRY_COUNT", default=3)
+```
+
+### Testing Guide
+
+**Mocking strategy**:
+- Mock STT Client to prevent actual API calls
+- Mock Repository to minimize DB access
+- Verify status updates
+
+**Test cases**:
+- Success scenario: STT conversion success and status update
+- Failure scenario: API error handling and status update
+- Retry scenario: Retry logic on network errors
+
+### Prohibited Patterns
+
+1. **Direct call from View**: Never call STT API directly from View
+2. **Synchronous processing**: Never process STT conversion synchronously (timeout risk)
+3. **Hardcoding**: Never hardcode API keys or providers in code
+4. **Error ignorance**: Never ignore STT API errors or only log them
+5. **No retry**: Never fail without retry logic on network errors

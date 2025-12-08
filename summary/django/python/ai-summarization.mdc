@@ -1,0 +1,116 @@
+---
+description: AI Summarization — ChatGPT API integration, prompt management, Advanced summarization
+globs: **/services/**/*summary*.py, **/services/**/*ai*.py, **/clients/**/*chatgpt*.py
+---
+
+## AI Summarization Guide
+
+### Integration Principles
+
+1. **Service Layer only**: ChatGPT API calls must be performed only in Service Layer
+2. **Prompt management**: Combine user prompt and admin prompt before sending
+3. **Error handling**: Proper error handling and retry logic on API failure
+4. **Async processing**: Summarization is a long-running task and must be processed asynchronously
+5. **Token management**: Monitor and limit token usage
+
+### ChatGPT Client Structure
+
+**Base Client interface**:
+- `complete(prompt: str, model: str, max_tokens: int) -> str`: Send prompt and receive response
+- API key and base_url configuration
+
+**Implementation classes**:
+- `OpenAIChatGPTClient`: OpenAI API client
+- Other provider clients can be added as needed
+
+### Summary Service Pattern
+
+**Basic summarization**:
+- Pipeline: `load STT → load prompts → combine → call ChatGPT → save summary`
+- Prompt combination: admin prompt + user prompt + STT text
+- Token usage storage: Store usage information for monitoring
+
+**Advanced summarization**:
+- Pipeline: `load Advanced STT → format with speakers → combine prompts → call ChatGPT → save`
+- Speaker formatting: Format as `[Speaker Name]: text`
+- Speaker opinion separation: Utilize speaker information from Advanced STT
+
+### Prompt Management
+
+**Model structure**:
+- `name`: Prompt name
+- `text`: Prompt content
+- `is_default`: Whether it's the default prompt
+- `is_active`: Whether it's active
+
+**Repository methods**:
+- `get_default_prompt() -> Prompt | None`: Get default prompt
+- `get_active_prompts() -> list[Prompt]`: Get list of active prompts
+
+### Async Processing
+
+**Celery task pattern**:
+- `@shared_task(bind=True, max_retries=3)`: Retryable task
+- Call Service Layer to perform actual logic
+- Retry logic: Exponential backoff
+- Update status after maximum retries
+
+```python
+from celery import shared_task
+from typing import Any
+
+@shared_task(bind=True, max_retries=3)
+def generate_summary_async(self, stt_data_id: int, user_prompt: str | None = None) -> None:
+    """Async summary generation task"""
+    summary_service = SummaryService()
+    try:
+        summary_service.generate_summary(stt_data_id, user_prompt=user_prompt)
+    except Exception as e:
+        logger.error(f"Summary generation failed: {str(e)}")
+        raise
+```
+
+### Token Usage Monitoring
+
+**Monitoring items**:
+- Total token usage
+- Prompt token usage
+- Completion token usage
+- Monthly aggregation
+
+**Repository methods**:
+- `find_by_date_range(start_date: datetime, end_date: datetime) -> QuerySet[Summary]`: Get summaries by date range
+- Aggregate and return token usage
+
+### 설정 관리
+
+```python
+# settings.py
+CHATGPT_API_KEY = env("CHATGPT_API_KEY", default="")
+CHATGPT_BASE_URL = env("CHATGPT_BASE_URL", default="https://api.openai.com/v1")
+CHATGPT_MODEL = env("CHATGPT_MODEL", default="gpt-4")
+CHATGPT_MAX_TOKENS = env.int("CHATGPT_MAX_TOKENS", default=2000)
+CHATGPT_TIMEOUT = env.int("CHATGPT_TIMEOUT", default=60)  # 1 minute
+CHATGPT_MONTHLY_TOKEN_LIMIT = env.int("CHATGPT_MONTHLY_TOKEN_LIMIT", default=1000000)
+```
+
+### Testing Guide
+
+**Mocking strategy**:
+- Mock ChatGPT Client to prevent actual API calls
+- Mock Repository to minimize DB access
+- Verify prompt combination logic
+
+**Test cases**:
+- Success scenario: Summary generation success and storage
+- Failure scenario: API error handling
+- Prompt combination: Verify admin + user prompt combination
+
+### Prohibited Patterns
+
+1. **Direct call from View**: Never call ChatGPT API directly from View
+2. **Synchronous processing**: Never process summarization synchronously (timeout risk)
+3. **Hardcoding**: Never hardcode API keys or models in code
+4. **Prompt hardcoding**: Never hardcode prompts; manage them in DB
+5. **Token ignorance**: Never ignore token usage monitoring
+6. **No retry**: Never fail without retry logic on network errors

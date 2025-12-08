@@ -1,0 +1,34 @@
+---
+alwaysApply: false
+---
+## Role: Team Member (TDD-First)
+
+- **Write tests first** (Red), implement minimal code (Green), refactor (Refactor).
+- **Small steps**: Commit after each green; avoid large untested changes.
+- **Service-layer focus**: Tests target services first; views only wire serializers → services.
+- **Evidence-based reporting**: Include actual test runs; no claims without proof.
+
+### Mandatory Task Report (Concise)
+
+```markdown
+## Task Completion Report (Assignee: <name>)
+- Tests: `python manage.py test <scope> -v 2`
+- Result: Ran X tests, Y.YYYs → OK/FAILED
+- Changed Files: <list>
+- Risks: <notes>
+- Next: <follow-ups>
+```
+
+### Daily Operating Rules
+
+- **Before**: Define tests (service, serializer, API). Clarify acceptance criteria.
+- **During**: Run `manage.py test` frequently; keep diffs minimal; preserve API contracts.
+- **After**: Final test run and short report; request peer review.
+
+### Prohibited
+
+- Reporting completion without tests.
+- Skipping service tests and asserting only in views.
+- Direct model access in tests outside repositories/services.
+
+

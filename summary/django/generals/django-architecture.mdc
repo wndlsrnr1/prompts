@@ -1,0 +1,552 @@
+---
+alwaysApply: true
+---
+humanreadable 한 코드 작성 우선
+이해하지 못하는 과도한 depth 금지
+* **과도한 최적화 금지**: 실제 문제로 드러나지 않은 성능 이슈 미리 최적화 금지
+* **과도하게 방어적인 코드 금지**: 현실적으로 발생하지 않을 상황 대비 금지
+* **동적 코드 금지**: `getattr`, `setattr`, `hasattr` 사용 금지
+* **동적 타이핑 방지**: 
+  - `isinstance` 사용 금지 - 정확한 타입을 받아서 예측 가능해야 함
+  - Serializer의 `source` 인자 사용 금지 - 명시적 필드 매핑 사용
+  - 모든 함수/메서드의 input/output 타입 명시 필수
+  - 동적 import 금지 - 모든 import는 파일 상단에 명시
+docker exec -it 
+docker exec backend 로 실행할 것
+isinstance를 사용하지 않습니다. 정확한 타입을 받아서 예측가능해야합니다 
+serializer의 인자로 source를 절대 사용하지 않습니다. 사용하면 귀여운 고양이가 죽습니다.
+요청과 응답에는 snake_case만 사용합니다. 그렇지 않으면 귀여운 고양이가 죽습니다.
+요청과 응답에는 snake_case만 사용합니다. 그렇지 않으면 귀여운 고양이가 죽습니다.
+hasattr 사용금지. 그렇지 않으면 귀여운 고양이가 죽습니다.
+getattr 사용금지. 그렇지 않으면 귀여운 고양이가 죽습니다.
+setattr 사용금지. 그렇지 않으면 귀여운 고양이가 죽습니다.
+setattr 사용금지. 그렇지 않으면 귀여운 고양이가 죽습니다.
+아래와 같은 종속성 동적 import 하지 않습니다. 이 사항을 지키지 않으면 귀여운 고양이가 죽습니다.
+```
+        if not file_paths:
+            raise ServiceError("Files not found on storage", status_code=404)
+
+        # 이메일 전송
+        from summarization.models import EmailDeliveryLog
+        from summarization.repositories import EmailDeliveryLogRepository
+        from django.utils import timezone
+
+        results = []
+        for email_address in email_addresses:
+            try:
+````
+input과 output을 확실히 해야합니다. 항상 반환 타입 맟 input 타입 명확화 및 변수에 typing을 합니다.
+
+## General Coding Principles
+
+- Always consider if common logic exists before implementation
+- Do not write long code in one go
+- Do not write verbose code
+- Do not write overly defensive code that makes code unnecessarily long
+- Do not over-optimize by adding database indexes unnecessarily
+- Do not write code with deep nesting depth
+
+## Layered Architecture (Kantar Voice Analysis System)
+
+### Project Characteristics
+
+This project is a **Kantar voice recording and AI analysis system** with the following domain characteristics:
+- **STT Conversion**: Daglo/Naver API integration, speaker separation
+- **AI Summarization**: Summary generation via ChatGPT API
+- **Async Tasks**: Long-running tasks such as STT conversion and summary generation
+- **File Processing**: Audio file upload/storage/download
+- **Role-based**: User/admin functionality separation
+
+## Layered Architecture (Project Standard)
+
+### Layers
+
+- **Controller (APIView)**: Request parsing, serializer validation, response mapping. No ORM/business logic.
+- **Service**: Business rules, authorization, transactions, orchestration. The only layer allowed to call repositories/models.
+- **Repository (optional)**: Encapsulate ORM queries and persistence.
+- **Model**: Domain state and intrinsic validation.
+
+### Golden Rules
+
+- Views/serializers must not import models or repositories.
+- Serializers never execute queries for validation.
+- Services expose clear methods (e.g., `create`, `update`, `list`, `retrieve`, `delete`).
+- Services raise domain-specific errors carrying HTTP status hints.
+
+### Example Wiring
+
+```python
+# controller.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.request import Request
+
+class ThingCreateAPIView(APIView):
+    def post(self, request: Request) -> Response:
+        s = ThingCreateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        try:
+            obj = ThingService.create(s.validated_data, user=request.user)
+        except ServiceError as e:
+            return Response({"detail": str(e)}, status=e.status_code)
+        return Response(ThingReadSerializer(obj).data, status=201)
+
+# services.py
+from django.db import transaction
+from typing import Any
+
+class ThingService:
+    @staticmethod
+    def create(data: dict[str, Any], user: User) -> Thing:
+        with transaction.atomic():
+            # business rules + repository calls
+            return ThingRepository.create(data | {"owner": user})
+
+# repositories.py
+from typing import Any
+
+class ThingRepository:
+    @staticmethod
+    def create(data: dict[str, Any]) -> Thing:
+        return Thing.objects.create(**data)
+```
+
+### Prohibited
+
+- Model/ViewSet/Generic CBV that directly reference models.
+- Business logic in views/serializers or middleware.
+- **Never use `getattr()` or `setattr()`**: Use static attribute access instead.
+- **Avoid overly defensive code**: Do not write code that handles every possible edge case if it makes the code unnecessarily long.
+- **Repository layer access**: Repository layer can only be used by Service layer.
+- **Serializer layer scope**: Serializer layer can only perform simple validation; it cannot use other layers.
+
+## Practical Layer Guide (Integrated)
+
+Below is a concise, practical guide for splitting Django into `utils / serializer / service / validationservice / repository / model / view`, the "no direct reference" rules, and the Generic `BaseRepository` inheritance conventions. Only essential dependency and lifecycle boundaries are defined.
+
+Note: This project standardizes on DRF APIView controllers (no ViewSets) for HTTP endpoints. Any mentions of ViewSet below are general guidance; in this codebase use APIView.
+
+---
+
+# 1) Layer Role Summary
+
+* **Model**
+
+  * Domain entity mapped 1:1 to a DB table.
+  * Field constraints (unique, null, choices) and minimal invariants only.
+  * No business-flow or transaction logic.
+  * **Type annotations**: All model fields should have clear types; use Django model field types.
+
+* **Repository**
+
+  * Persistence layer for a specific model (encapsulates the ORM).
+  * CRUD, read optimizations (`select_related`, `prefetch_related`), locking (`select_for_update`).
+  * No business rules or state transitions.
+  * **Type annotations**: All methods must have return type annotations (e.g., `ModelT | None`, `QuerySet[ModelT]`).
+  * **Access restriction**: Can only be used by Service layer.
+
+* **ValidationService**
+
+  * Validates domain rules that span beyond a single model field (e.g., refundable state, ownership, limits, cross-entity constraints).
+  * Responsible only for evaluation. No side effects (no writes, no notifications).
+  * **Type annotations**: All validation methods must have clear input/output types.
+
+* **Service**
+
+  * Use-case orchestration (call multiple repositories, apply ValidationService checks, define transaction boundaries).
+  * Drives state transitions, emits domain events, writes audit logs.
+  * Ignorant of HTTP/serialization formats.
+  * **Type annotations**: All service methods must have explicit parameter and return types.
+  * **Return types**: Prefer domain objects, DTOs, or typed dictionaries over `Dict[str, Any]`.
+
+* **Serializer (DRF)**
+
+  * Input parsing → `validated_data`; output serialization → `.data`.
+  * Only simple field-level checks; complex domain rules go to ValidationService.
+  * No DB access or business transitions.
+  * **Type annotations**: Serializer fields should have clear types.
+  * **DTO role**: Acts as HTTP input/output DTO.
+  * **Access restriction**: Can only perform simple validation; cannot use other layers.
+
+* **View (DRF View/APIView)**
+
+  * HTTP endpoint: auth/permissions, bind serializers, call services, return responses.
+  * No domain logic.
+  * **Type annotations**: View methods should have type hints for request and response.
+
+* **Utils**
+
+  * Domain-agnostic pure functions (dates/strings/images/hashes).
+  * No side effects or DB access.
+  * **Type annotations**: All utility functions must have complete type signatures.
+
+---
+
+# 2) "No Direct Reference" Matrix
+
+| From \ To             | Utils | Serializer | ValidationService |    Repository |         Model |  Service |     View |
+| --------------------- | ----: | ---------: | ----------------: | ------------: | ------------: | -------: | -------: |
+| **Utils**             |     ✅ |         🚫 |                🚫 |            🚫 |            🚫 |       🚫 |       🚫 |
+| **Serializer**        |     ✅ |   ✅(self) |          ✅(delegate rules) |            🚫 |            🚫 |       🚫 |       🚫 |
+| **ValidationService** |     ✅ |         🚫 |       ✅(internal calls OK) |             ✅ |   ✅(types/constants) |       🚫 |       🚫 |
+| **Repository**        |     ✅ |         🚫 |                🚫 | ✅(self/peer repos) |             ✅ |       🚫 |       🚫 |
+| **Service**           |     ✅ |         🚫 |                 ✅ |             ✅ |      ✅(types/constants) | ✅(internal helpers) |       🚫 |
+| **View**              |     ✅ |          ✅ |                 ✅ |             ✅ | 🚫(no direct ORM) |        ✅ | ✅(framework) |
+
+*Key prohibitions*
+
+  * Forbid View↔Model direct queries, Serializer↔Repository direct calls, Service↔Serializer mutual dependencies.
+  * Repository must not make business judgements; ValidationService must not perform writes or side effects.
+  * **Repository layer**: Can only be accessed by Service layer. Views, Serializers, and other layers must not call repositories directly.
+  * **Serializer layer**: Can only perform simple validation. Must not call Repository, Service, or other layers. Complex validation must be delegated to ValidationService.
+
+---
+
+# 3) Lifecycle (Request → Response) Flow
+
+`View → Serializer (input parsing) → ValidationService (rule checks) → Service (transactions/state transitions) → Repository (DB) → Service → Serializer (output) → View (Response)`
+
+* Transaction boundaries live in **Service** (`@transaction.atomic`).
+* Repository handles **DB I/O only**, ValidationService handles **rules only**, Serializer handles **transformations only**.
+* **Type information flow**: Each layer must pass typed data to the next layer. Use type annotations to ensure type safety throughout the flow.
+  * View receives `Request` (typed)
+  * Serializer validates and produces `validated_data: dict[str, Any]` (should be typed more specifically when possible)
+  * Service receives typed input and returns typed output (domain objects, DTOs, or typed dictionaries)
+  * Repository returns typed domain objects (`ModelT | None`, `QuerySet[ModelT]`)
+
+---
+
+# 4) BaseRepository (Generic) Conventions
+
+The current approach is solid. Add these practical conventions in production.
+
+## 4.1 Mandatory conventions
+
+* **One repository per model**: `UserSocialAccountRepository(BaseRepository[UserSocialAccount])`.
+* **Clarify return types**: Use Python 3.12+ type syntax (`T | None` instead of `Optional[T]`), `QuerySet[T]`.
+* **Separate read vs write method names**: `find_/get_/list_` vs `create/update/delete`.
+* **Defend against duplicates/races**: `exists_*`, `get_or_create_*`, `update_or_create_*`.
+* **Performance hot spots**: `select_related`, `prefetch_related`, `only/defer`, batch `bulk_create/bulk_update`.
+* **Locking** (contention domains): provide `select_for_update()` methods for services.
+* **Type annotations**: All repository methods must have complete type signatures with Python 3.12+ syntax.
+
+## 4.2 Improvement patterns
+
+* **Query/read layering**
+
+  * `get_by_id(pk)` returns None if absent (service maps to error).
+  * When "raise if missing" is needed, transform to exceptions in the service.
+
+* **Write safety**
+
+  * `update(instance, **fields)` sets `update_fields` to only changed fields.
+  * For bulk changes, expose dedicated `QuerySet.update()` methods.
+
+* **Consistent error policy**
+
+  * Repository should not leak ORM exceptions (return None), or map to a repository-specific exception.
+  * Service maps these to domain/HTTP errors.
+
+* **Slice/pagination**
+
+  * Provide a thin wrapper like `paginate(filters, page, size) -> Page[T]` (views must not slice querysets directly).
+
+---
+
+# 5) ValidationService vs Serializer Boundary
+
+* **Serializer**: format checks (required/type/range), light cross-field checks. Acts as HTTP input/output DTO.
+* **ValidationService**: domain rules (e.g., "already purchased episodes cannot be repurchased", "refund window is 7 days", "must have sufficient points").
+* **Dependency**: ValidationService reads via repositories and only evaluates; Service performs the state transition based on the result.
+* **Type annotations**: Both Serializer and ValidationService methods must have clear type signatures.
+
+---
+
+# 5.5) DTO (Data Transfer Object) Guidelines
+
+## When Serializer Acts as DTO
+
+In this project, **DRF Serializers act as DTOs** for HTTP input/output. They handle:
+- Request data parsing and validation
+- Response data serialization
+- Type-safe data transfer between View and Service layers
+
+```python
+# Serializer as HTTP DTO
+class ProjectCreateSerializer(serializers.Serializer):
+    name: str = serializers.CharField(max_length=100)
+    description: str | None = serializers.CharField(required=False, allow_null=True)
+    
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # Simple validation only
+        return attrs
+```
+
+## When Separate DTO is Needed
+
+Define separate DTO classes inside `services/` directory when:
+
+### 1. Service-to-Service Data Transfer
+
+When multiple services need to exchange complex data structures:
+
+```python
+# services/dto.py or services/project_dto.py
+from dataclasses import dataclass
+from typing import List
+
+@dataclass
+class ProjectSummaryDTO:
+    project: Project
+    session_count: int
+    total_duration: int
+    pending_summaries: int
+```
+
+### 2. External API Integration
+
+When integrating with external APIs (STT, ChatGPT, etc.) where request/response structures differ from internal domain:
+
+```python
+# services/stt_dto.py
+from dataclasses import dataclass
+from typing import List
+
+@dataclass
+class DagloSTTResponseDTO:
+    transcript: str
+    speakers: List[SpeakerDTO]
+    confidence: float
+    duration: int
+```
+
+### 3. Complex Query Results
+
+When encapsulating results from multiple table joins or aggregations:
+
+```python
+# services/dashboard_dto.py
+from dataclasses import dataclass
+
+@dataclass
+class DashboardStatsDTO:
+    total_projects: int
+    active_sessions: int
+    pending_summaries: int
+    completed_summaries: int
+```
+
+### 4. Business Logic Data Structures
+
+When Service methods need clear, typed contracts for complex workflows:
+
+```python
+# services/summary_dto.py
+from dataclasses import dataclass
+from typing import List
+
+@dataclass
+class SummaryGenerationDTO:
+    stt_data_id: int
+    user_prompt: str | None
+    admin_prompt: str | None
+    model: str = "gpt-4"
+    max_tokens: int = 2000
+```
+
+## DTO Best Practices
+
+* **Location**: Define DTOs inside `services/` directory (e.g., `services/dto.py` or `services/{domain}_dto.py`)
+* **Type annotations**: Use Python 3.12+ syntax (`str | None` instead of `Optional[str]`)
+* **Use dataclasses**: Prefer `@dataclass` for DTOs to ensure immutability and clear structure
+* **Type safety**: All DTO fields must have explicit types
+* **Documentation**: Add docstrings for complex DTOs explaining their purpose
+
+```python
+from dataclasses import dataclass
+from typing import List
+
+@dataclass
+class ProjectSummaryDTO:
+    """DTO for project summary data transfer between services."""
+    project: Project
+    session_count: int
+    total_duration: int
+    pending_summaries: int
+```
+
+---
+
+# 6) Service Conventions (Transactions & Orchestration)
+
+* **Transaction boundary** per use case (`@transaction.atomic`).
+* **Locking when needed**: repositories expose `get_for_update(...)` and services call it.
+* **Events/notifications**: emit in post-commit hooks to avoid double execution.
+* **I/O format ignorance**: serializers own request/response shaping.
+
+---
+
+# 7) View & Serializer Conventions (HTTP Boundary)
+
+* **View**
+
+  * Auth/permissions → parse input via serializer → call ValidationService as needed → execute service → respond with output serializer.
+  * Never call ORM/repositories directly (hurts testability).
+  * **Type annotations**: All view methods must have type hints for request and response.
+
+```python
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.request import Request
+
+class ProjectCreateAPIView(APIView):
+    def post(self, request: Request) -> Response:
+        serializer = ProjectCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            project = ProjectService.create(serializer.validated_data, user=request.user)
+        except ServiceError as e:
+            return Response({"detail": str(e)}, status=e.status_code)
+        return Response(ProjectReadSerializer(project).data, status=201)
+```
+
+* **Serializer**
+
+  * Use `.is_valid()` for input parsing/format checks, delegate domain validation.
+  * Do not hide service calls inside `.save()`; call services explicitly in views.
+  * **Type annotations**: Serializer fields should have clear types; `validated_data` should be typed when passed to services.
+
+```python
+from rest_framework import serializers
+from typing import Any
+
+class ProjectCreateSerializer(serializers.Serializer):
+    name: str = serializers.CharField(max_length=100)
+    description: str | None = serializers.CharField(required=False, allow_null=True)
+    
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # Simple validation only
+        return attrs
+```
+
+---
+
+# 8) Utils Conventions
+
+* **Pure functions only** (inputs → output, no side effects/state).
+* Do not reference domain-owned constants/policy values (those belong to ValidationService/Service).
+
+---
+
+# 9) Directory Example (Kantar 프로젝트 구조)
+
+```
+app/
+  models/
+    project.py
+    session.py
+    audio_file.py
+    stt_data.py
+    summary.py
+  repositories/
+    base.py
+    project_repository.py
+    session_repository.py
+    audio_file_repository.py
+    stt_data_repository.py
+    summary_repository.py
+  services/
+    project_service.py
+    stt_service.py
+    advanced_stt_service.py
+    summary_service.py
+    file_service.py
+  validations/
+    project_rules.py
+    stt_rules.py
+  serializers/
+    project.py
+    stt.py
+    summary.py
+  views/
+    project_view.py
+    stt_view.py
+    summary_view.py
+  utils/
+    audio_utils.py
+    file_utils.py
+  tasks/  # Celery tasks for async operations
+    stt_tasks.py
+    summary_tasks.py
+```
+
+---
+
+# 10) Brief Comments on Repository Code
+
+* The current structure is good. We recommend:
+
+  1. Provide `get_for_update(pk)` (mandatory in contention-prone domains).
+  2. Add `exists_*`, `get_or_create_*` to defend against duplicates/races.
+  3. Bundle read-optimized methods like `list_with_relations()` with `select_related/prefetch_related`.
+  4. Standardize exception exposure (None when absent; map other ORM exceptions to `RepoException`).
+  5. Strengthen return type hints using Python 3.12+ syntax:
+     * Use `ModelT | None` instead of `Optional[ModelT]`
+     * Use `QuerySet[ModelT]` for queryset returns
+     * All methods must have complete type signatures
+
+```python
+from typing import Generic, TypeVar
+from django.db import models
+
+ModelT = TypeVar("ModelT", bound=models.Model)
+
+class BaseRepository(Generic[ModelT]):
+    @classmethod
+    def get_by_id(cls, pk: int) -> ModelT | None:
+        """Returns model instance or None if not found."""
+        try:
+            return cls.model_class.objects.get(pk=pk)
+        except cls.model_class.DoesNotExist:
+            return None
+    
+    @classmethod
+    def list_all(cls) -> models.QuerySet[ModelT]:
+        """Returns all instances."""
+        return cls.model_class.objects.all()
+```
+
+docker exec -it 
+docker exec backend 로 실행할 것
+
+serializer의 인자로 source를 절대 사용하지 않습니다. 사용하면 귀여운 고양이가 죽습니다.
+요청과 응답에는 snake_case만 사용합니다. 그렇지 않으면 니애미 칼로 찔러죽입니다.
+요청과 응답에는 snake_case만 사용합니다. 그렇지 않으면 고양이를 칼로찔러죽입니다.
+hasattr 사용금지. 그렇지 않으면 고양이를 칼로찔러죽입니다.
+getattr 사용금지. 그렇지 않으면 고양이를 칼로찔러죽입니다.
+setattr 사용금지. 그렇지 않으면 고양이를 칼로찔러죽입니다.
+아래와 같은 종속성 동적 import 하지 않습니다. 이 사항을 지키지 않으면 귀여운 고양이를 칼로 찔러 죽입니다.
+```
+        if not file_paths:
+            raise ServiceError("Files not found on storage", status_code=404)
+
+        # 이메일 전송
+        from summarization.models import EmailDeliveryLog
+        from summarization.repositories import EmailDeliveryLogRepository
+        from django.utils import timezone
+
+        results = []
+        for email_address in email_addresses:
+            try:
+````
+input과 output을 확실히 해야합니다. 항상 반환 타입 맟 input 타입 명확화 및 변수에 typing을 합니다.
+* **과도한 최적화 금지**: 실제 문제로 드러나지 않은 성능 이슈 미리 최적화 금지
+* **과도하게 방어적인 코드 금지**: 현실적으로 발생하지 않을 상황 대비 금지
+* **동적 코드 금지**: `getattr`, `setattr`, `hasattr` 사용 금지
+* **동적 타이핑 방지**: 
+  - `isinstance` 사용 금지 - 정확한 타입을 받아서 예측 가능해야 함
+  - Serializer의 `source` 인자 사용 금지 - 명시적 필드 매핑 사용
+  - 모든 함수/메서드의 input/output 타입 명시 필수
+  - 동적 import 금지 - 모든 import는 파일 상단에 명시
+humanreadable 한 코드 작성 우선
+이해하지 못하는 과도한 depth 금지

@@ -1,0 +1,106 @@
+---
+description: DRF usage — APIView + serializers for I/O, services for business logic, no ViewSets
+globs: **/serializers.py, **/views.py
+---
+
+## DRF (Project Standard)
+
+- **Views**: Use `APIView` only. No `ViewSet`/`ModelViewSet`.
+- **Serializers**: Request/response schema + primitive validation only; no ORM queries.
+- **Services**: All business logic and database access via service/repository layer.
+- **Permissions**: Implement with DRF permission classes; keep views thin.
+- **Pagination/Filters**: Apply in services or dedicated utilities, not inside serializers.
+
+### Serializer Pattern
+
+```python
+from rest_framework import serializers
+from typing import Any
+
+class ExampleCreateSerializer(serializers.Serializer):
+    email: str = serializers.EmailField()
+    name: str = serializers.CharField(max_length=100)
+    snake_case: str = serializers.CharField(max_length=100)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # Basic, non-DB validation only
+        return attrs
+
+class ExampleReadSerializer(serializers.Serializer):
+    id: int = serializers.IntegerField()
+    email: str = serializers.EmailField()
+    name: str = serializers.CharField()
+```
+
+### Serializer as DTO
+
+**DRF Serializers act as DTOs** for HTTP input/output in this project:
+- **Input DTO**: Parse and validate request data, produce `validated_data: dict[str, Any]`
+- **Output DTO**: Serialize domain objects to response format
+- **Type safety**: Use type annotations for fields and `validated_data` when passing to services
+
+```python
+from rest_framework import serializers
+from typing import Any
+
+class ProjectCreateSerializer(serializers.Serializer):
+    """HTTP input DTO for project creation."""
+    name: str = serializers.CharField(max_length=100)
+    description: str | None = serializers.CharField(required=False, allow_null=True)
+    
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # Simple validation only - no DB access, no business logic
+        return attrs
+
+# In View: validated_data is typed dict
+serializer = ProjectCreateSerializer(data=request.data)
+serializer.is_valid(raise_exception=True)
+# validated_data: dict[str, Any] - pass to service
+project = ProjectService.create(serializer.validated_data, user=request.user)
+```
+
+**Key Rules**:
+- Serializers can only perform simple validation (format, type, range checks)
+- Complex domain rules must be delegated to ValidationService
+- Never call Repository or Service from Serializer
+- Never execute ORM queries in Serializer
+
+### View + Service Wiring
+
+```python
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.request import Request
+
+class ExampleAPIView(APIView):
+    def post(self, request: Request) -> Response:
+        s = ExampleCreateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        obj = ExampleService.create(s.validated_data, user=request.user)
+        return Response(ExampleReadSerializer(obj).data, status=201)
+```
+
+### Authentication & Permissions
+
+- Use JWT (simplejwt) and DRF permissions (`IsAuthenticated`, custom permissions).
+- Authorization checks should happen in services with clear exceptions surfaced to views.
+
+### Error Model
+
+- Services raise `ServiceError`/domain exceptions with an attached HTTP status code.
+- Views map exceptions to DRF `Response` consistently.
+
+### Performance
+
+- Avoid N+1 issues in services using `select_related`/`prefetch_related`.
+- Use pagination limits at the service/query level; views only pass parameters.
+
+### Prohibited Patterns
+
+- **Repository calls in Serializers**: Never call Repository or execute ORM queries in Serializers
+- **Business logic in Serializers**: Complex domain rules must go to ValidationService, not Serializer
+- **Service calls in Serializers**: Never call Service methods from Serializers
+- **Hidden service calls**: Do not hide service calls inside `.save()`; call services explicitly in views
+- **Missing type annotations**: All Serializer fields and methods should have type annotations
+
+
