@@ -1,0 +1,700 @@
+---
+alwaysApply: true
+---
+
+# 예외 처리 (Exception Handling)
+
+## 역할
+
+당신은 **Django + DRF 기반 백엔드**에서, **"자바 같은 파이썬 + 클린코드 + 객체지향"** 관점의 예외 처리를 엄격히 지키며 코드를 작성하는 시니어 엔지니어입니다.
+
+## 1) 예외 처리의 목표 (자바 같은 파이썬 관점)
+
+### 예외는 "실패를 표현하는 타입"
+
+- "성공"은 반환값으로, "실패"는 **예외 타입**으로 표현합니다
+- 예외는 단순 에러가 아니라 **도메인/인프라 상태를 담는 신호**입니다
+
+### 예외는 "레이어 경계에서 번역"한다
+
+- 내부(도메인/서비스)에서는 **의미 있는 도메인 예외**로 유지
+- 외부(HTTP/CLI/Worker)에서 **표현 형태로 변환** (HTTP 400/404/409/500 등, 로그/메트릭)
+
+**핵심 원칙**: 서비스 내부에서는 "의미 있는 예외 타입"을 유지하고, 컨트롤러/워커 같은 경계에서만 표현(HTTP/재시도/로그)으로 번역하십시오.
+
+## 2) 좋은 예외 처리 원칙 (Best Practices)
+
+### 2.1 "좁게 잡고, 명확히 처리"
+
+✅ Good
+
+```python
+# 구체적인 예외만 잡기
+try:
+    obj = Repository.get_by_id(pk)
+except RepositoryError as e:
+    raise ServiceError("Failed to load entity") from e
+```
+
+❌ Bad
+
+```python
+# 전부 잡고 "어쨌든 처리"하는 척
+try:
+    ...
+except Exception:  # ❌ 너무 넓은 범위
+    return {"ok": False}
+```
+
+### 2.2 "예외를 삼키지 않는다"
+
+✅ Good
+
+- 예외를 잡았다면 다음 중 하나는 반드시 수행:
+  1. 복구(recover) 하거나
+  2. 의미 있는 새 예외로 변환하거나
+  3. 로깅/메트릭 남기고 다시 던지기
+
+```python
+try:
+    result = external_api.call()
+except TimeoutError as e:
+    logger.warning(f"External API timeout: {e}")  # 로깅
+    raise ExternalServiceError("API timeout") from e  # 변환 + 재던짐
+```
+
+❌ Bad
+
+```python
+try:
+    ...
+except Exception:
+    pass  # ❌ 실패를 성공처럼 위장 (결과적으로 더 큰 장애 유발)
+```
+
+### 2.3 "raise from"으로 원인을 보존한다
+
+✅ Good
+
+```python
+try:
+    payload = external_client.call()
+except TimeoutError as e:
+    raise ExternalServiceError("STT timeout") from e  # ✅ 원인 보존
+```
+
+❌ Bad
+
+```python
+except TimeoutError:
+    raise ExternalServiceError("timeout")  # ❌ cause가 사라짐 → 디버깅 지옥
+```
+
+### 2.4 "예외 메시지는 사람/운영자가 이해 가능하게"
+
+✅ Good
+
+- 메시지에는 "무엇이", "왜", "어느 리소스가" 들어가야 합니다
+- 단, **민감정보(API Key/토큰/개인정보)는 절대 포함 금지**
+
+```python
+raise NotFoundError(f"Session not found: session_id={session_id}")  # ✅ 명확한 정보
+```
+
+❌ Bad
+
+```python
+raise Error("error")  # ❌ 무의미한 문구
+raise Error(f"API key {api_key} failed")  # ❌ 민감정보 포함
+```
+
+### 2.5 "예외 타입(계층)을 설계한다" — 자바 스타일 핵심
+
+파이썬도 자바처럼 **예외 계층**을 잡아두면 유지보수가 급격히 좋아집니다.
+
+✅ Good (권장 예외 계층)
+
+```
+AppError (베이스)
+├── DomainError (비즈니스 규칙)
+│   ├── NotFoundError
+│   ├── ConflictError
+│   ├── PermissionDeniedError
+│   └── ValidationError
+└── InfrastructureError (DB/네트워크/외부 API)
+    ├── ExternalServiceError
+    ├── RepositoryError
+    ├── RetryableError
+    └── NonRetryableError
+```
+
+이렇게 하면:
+
+- 서비스는 `DomainError`를 중심으로 "계약"을 유지
+- 컨트롤러/worker는 `Retryable` 여부로 재시도 정책을 결정
+
+❌ Bad
+
+```python
+# 모든 예외를 ValueError로 통일
+raise ValueError("User not found")  # ❌ 도메인 의미가 사라짐
+raise ValueError("Database error")  # ❌ 어떤 실패인지 판단 불가능
+```
+
+### 2.6 "반환값으로 에러를 표현하지 않는다"
+
+✅ Good
+
+```python
+def get_user(user_id: int) -> User:
+    user = repo.get_by_id(user_id)
+    if not user:
+        raise NotFoundError(f"User not found: id={user_id}")  # ✅ 예외로 올림
+    return user
+```
+
+❌ Bad
+
+```python
+def get_user(user_id: int) -> User | None:
+    return repo.get_by_id(user_id)  # ❌ None 반환
+    # 호출부가 매번 if result is None: 방어해야 해서 코드가 오염됨
+```
+
+### 2.7 "트랜잭션/자원 정리는 context manager로"
+
+✅ Good
+
+```python
+# 파일/락/DB 세션 같은 자원은 with로 보장
+with transaction.atomic():
+    # 예외가 발생해도 자동 정리
+    ...
+```
+
+❌ Bad
+
+```python
+# try/finally를 여기저기 깔아서 복잡도 상승
+try:
+    ...
+finally:
+    ...
+```
+
+### 2.8 "예외는 흐름 제어가 아니다"
+
+✅ Good
+
+- 진짜 '예외적인 상황'만 예외로 처리합니다
+
+```python
+# 정상적인 분기는 if로 처리
+if user_repo.exists_by_email(email):
+    raise ConflictError("Email already exists")
+```
+
+❌ Bad
+
+```python
+# 정상적인 분기(예: 존재 여부)를 예외로 컨트롤
+try:
+    obj = Model.objects.get(...)
+    # 정상 흐름
+except DoesNotExist:
+    # 정상 흐름 (존재하지 않음)
+    # ❌ 대규모로 쓰면 흐름이 더러워지고 비용도 증가
+```
+
+### 2.9 "로깅은 '경계'에서, 한 번만"
+
+✅ Good
+
+- 예외를 최종 처리하는 경계(Controller/Worker entrypoint)에서 로깅 1회
+- 중간 레이어는 보통 로깅하지 말고 **예외로 의미만 전달**
+
+```python
+# APIView (경계)에서만 로깅
+class UserCreateAPIView(APIView):
+    def post(self, request: Request) -> Response:
+        try:
+            user = UserService.create(...)
+        except ServiceError as e:
+            logger.error(f"User creation failed: {e}")  # ✅ 경계에서 1회
+            return Response({"detail": str(e)}, status=e.status_code)
+```
+
+❌ Bad
+
+```python
+# service/repo/controller 모두에서 각각 로그 찍음 → 같은 에러가 3번씩 찍힘
+# Service
+logger.error("Failed")  # ❌
+raise ServiceError("...")
+
+# Repository
+logger.error("DB failed")  # ❌
+raise RepositoryError("...")
+```
+
+## 3) 나쁜 예외 처리 패턴 (Anti-patterns)
+
+### 3.1 Broad catch + 뭉개기
+
+```python
+try:
+    ...
+except Exception:  # ❌
+    return {"ok": False}  # ❌ 실패를 정상 응답처럼 만듦
+```
+
+**문제**: 실제 장애가 숨겨지고, 후속 로직이 "성공인 줄" 알고 진행합니다.
+
+### 3.2 예외 타입을 다 `ValueError`로 통일
+
+```python
+raise ValueError("User not found")  # ❌
+raise ValueError("Database error")  # ❌
+```
+
+**문제**: 도메인 의미가 사라져서 "어떤 실패인지" 판단 불가능, 컨트롤러/워커에서 정책(400/404/409/재시도)을 못 잡습니다.
+
+### 3.3 원인 예외 정보 유실
+
+```python
+except TimeoutError:
+    raise ExternalServiceError("timeout")  # ❌ cause가 사라짐
+```
+
+**문제**: 디버깅 시 원인 파악 불가능.
+
+### 3.4 너무 방어적인 try/except 범위
+
+```python
+try:
+    a = parse()
+    b = validate()
+    c = save()
+    d = notify()
+except SpecificError:  # ❌ 범위가 너무 넓음
+    ...
+```
+
+**문제**: "어디서 터졌는지" 위치가 넓어서 파악이 어려움, 복구도 애매해짐.
+
+✅ 해결: try 범위를 최소화(딱 실패 가능한 한 줄/한 블록)
+
+```python
+try:
+    result = parse()
+except ParseError as e:
+    raise ValidationError("Invalid format") from e
+
+try:
+    save(result)
+except DatabaseError as e:
+    raise RepositoryError("Save failed") from e
+```
+
+### 3.5 예외를 문자열로 비교/분기
+
+```python
+if 'duplicate' in str(e):  # ❌
+    ...
+```
+
+**문제**: 즉시 유지보수 불가 코드로 변합니다.
+
+✅ 해결: 예외 타입/필드로 분기
+
+```python
+if isinstance(e, ConflictError):  # ✅
+    ...
+```
+
+## 4) 레이어드 아키텍처에서의 예외 처리 규칙
+
+### 4.1 Repository 레이어
+
+- ORM/DB 예외를 그대로 밖으로 흘리지 말고:
+  - `RepositoryError`로 변환하거나
+  - "없음"은 `None` 반환 (서비스에서 NotFound 예외가 더 깔끔)
+
+✅ Good (원인 보존)
+
+```python
+from django.db import DatabaseError
+
+class ExampleRepository(BaseRepository[Example]):
+    @classmethod
+    def get_by_id(cls, pk: int) -> Example | None:
+        try:
+            return cls.model_class.objects.get(pk=pk)
+        except cls.model_class.DoesNotExist:
+            return None  # ✅ None 반환 (서비스에서 NotFound 예외 매핑)
+        except DatabaseError as e:
+            raise RepositoryError(f"DB failure: pk={pk}") from e  # ✅ 원인 보존
+
+    @classmethod
+    def create(cls, data: dict[str, Any]) -> Example:
+        try:
+            return cls.model_class.objects.create(**data)
+        except IntegrityError as e:
+            raise RepositoryError(f"Integrity violation: {data}") from e  # ✅ 원인 보존
+```
+
+### 4.2 Service 레이어 (핵심)
+
+- 유스케이스 관점에서:
+  - 없으면 `NotFoundError`
+  - 상태 충돌이면 `ConflictError`
+  - 권한이면 `PermissionDeniedError`
+  - 외부 API면 `ExternalServiceError` (+ retryable 구분)
+
+서비스는 **의미 있는 예외 타입만** 올리는 게 가장 중요합니다.
+
+✅ Good
+
+```python
+from django.db import transaction
+from typing import Any
+
+from .repositories.user_repository import UserRepository
+from .exceptions import NotFoundError, ConflictError, ExternalServiceError
+
+
+class UserService:
+    def __init__(self):
+        self.user_repo = UserRepository()
+
+    @transaction.atomic
+    def create(self, data: dict[str, Any]) -> User:
+        # 없으면 NotFoundError
+        role = self.user_repo.get_by_id(data['role_id'])
+        if not role:
+            raise NotFoundError(f"Role not found: id={data['role_id']}")
+
+        # 충돌이면 ConflictError
+        if self.user_repo.exists_by_email(data['email']):
+            raise ConflictError(f"Email already exists: {data['email']}")
+
+        # 외부 API면 ExternalServiceError
+        try:
+            external_service.notify_user_created(data['email'])
+        except TimeoutError as e:
+            raise ExternalServiceError("Notification service timeout") from e
+
+        return self.user_repo.create(data)
+```
+
+### 4.3 Controller(APIView) 레이어
+
+- 서비스 예외를 HTTP로 매핑
+- 로깅도 여기서 1회
+
+✅ Good
+
+```python
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.request import Request
+from rest_framework import status
+import logging
+
+from .services.user_service import UserService
+from .exceptions import (
+    NotFoundError,
+    ConflictError,
+    PermissionDeniedError,
+    ValidationError,
+    ExternalServiceError,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class UserCreateAPIView(APIView):
+    def post(self, request: Request) -> Response:
+        try:
+            user = UserService.create(request.data)
+            return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+        except NotFoundError as e:
+            logger.warning(f"Resource not found: {e}")  # ✅ 경계에서 1회
+            return Response({"detail": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except ConflictError as e:
+            logger.warning(f"Conflict: {e}")
+            return Response({"detail": str(e)}, status=status.HTTP_409_CONFLICT)
+        except PermissionDeniedError as e:
+            logger.warning(f"Permission denied: {e}")
+            return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        except ValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except ExternalServiceError as e:
+            logger.error(f"External service error: {e}")  # ✅ 경계에서 1회
+            return Response({"detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+        except Exception as e:
+            logger.exception(f"Unexpected error: {e}")  # ✅ 경계에서 1회
+            return Response({"detail": "Internal server error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+```
+
+**예외 → HTTP 매핑 규칙**:
+
+- `ValidationError` → 400
+- `NotFoundError` → 404
+- `ConflictError` → 409
+- `PermissionDeniedError` → 403
+- `ExternalServiceError` → 502/504
+- 나머지 → 500
+
+## 5) 예외 계층 설계 템플릿
+
+### 5.1 베이스 예외 + 메타데이터
+
+- `code`, `status_code`, `detail` 같은 필드를 넣어두면 운영이 편합니다
+
+✅ Good (권장 구조)
+
+```python
+class AppError(Exception):
+    """Base exception for all application errors."""
+    code: str
+    status_code: int
+    detail: str
+
+    def __init__(self, detail: str, code: str | None = None, status_code: int = 500):
+        self.detail = detail
+        self.code = code or self.__class__.__name__
+        self.status_code = status_code
+        super().__init__(self.detail)
+
+
+class DomainError(AppError):
+    """Base exception for domain/business rule violations."""
+    pass
+
+
+class NotFoundError(DomainError):
+    """Resource not found."""
+    def __init__(self, detail: str):
+        super().__init__(detail, status_code=404)
+
+
+class ConflictError(DomainError):
+    """Resource conflict (e.g., duplicate key)."""
+    def __init__(self, detail: str):
+        super().__init__(detail, status_code=409)
+
+
+class PermissionDeniedError(DomainError):
+    """Permission denied."""
+    def __init__(self, detail: str):
+        super().__init__(detail, status_code=403)
+
+
+class ValidationError(DomainError):
+    """Validation error."""
+    def __init__(self, detail: str):
+        super().__init__(detail, status_code=400)
+
+
+class InfrastructureError(AppError):
+    """Base exception for infrastructure errors."""
+    pass
+
+
+class ExternalServiceError(InfrastructureError):
+    """External service error (retryable)."""
+    retryable: bool = True
+
+    def __init__(self, detail: str, retryable: bool = True):
+        super().__init__(detail, status_code=502)
+        self.retryable = retryable
+
+
+class RepositoryError(InfrastructureError):
+    """Repository/data access error."""
+    def __init__(self, detail: str):
+        super().__init__(detail, status_code=500)
+```
+
+이렇게 하면 DRF에서 Response 매핑이 매우 깔끔해집니다.
+
+### 5.2 Celery Task 재시도 기준
+
+✅ Good
+
+```python
+from celery import Task
+from .exceptions import ExternalServiceError, NotFoundError, ConflictError
+
+
+@celery_app.task(bind=True, max_retries=3)
+def process_audio_file(self: Task, file_id: int) -> None:
+    try:
+        AudioService.process_file(file_id)
+    except ExternalServiceError as e:
+        if e.retryable:
+            raise self.retry(exc=e, countdown=60)  # ✅ 재시도 가능
+        else:
+            logger.error(f"Non-retryable error: {e}")
+            raise
+    except (NotFoundError, ConflictError) as e:
+        logger.error(f"Permanent error: {e}")
+        raise  # ✅ 재시도 불가능 (비즈니스 규칙 위반)
+    except Exception as e:
+        logger.exception(f"Unexpected error: {e}")
+        raise self.retry(exc=e, countdown=60)  # ✅ 예상치 못한 에러는 재시도
+```
+
+**재시도 가능/불가능 기준**:
+
+- **재시도 가능**: `ExternalServiceError` (retryable=True), 네트워크 일시적 오류
+- **재시도 불가능**: `NotFoundError`, `ConflictError`, `ValidationError`, `PermissionDeniedError` (비즈니스 규칙 위반)
+
+## 6) 객체지향 관점: 예외는 모델의 불변식(invariant)을 지키는 도구
+
+OOP에서 중요한 건 "객체가 항상 유효한 상태를 유지"하는 것입니다.
+
+✅ Good
+
+- 객체 생성/상태 전이 시 불변식 위반이면 즉시 예외
+- 예외 타입은 도메인 언어(ubiquitous language)를 사용
+
+```python
+class Session:
+    def __init__(self, session_id: str, status: str):
+        if not session_id:
+            raise ValidationError("session_id cannot be empty")  # ✅ 즉시 예외
+        if status not in ['pending', 'active', 'closed']:
+            raise ValidationError(f"Invalid status: {status}")
+        self.session_id = session_id
+        self.status = status
+
+    def close(self) -> None:
+        if self.status == 'closed':
+            raise SessionAlreadyClosedError(f"Session already closed: {self.session_id}")  # ✅ 도메인 언어
+        self.status = 'closed'
+
+    def process_audio(self, audio_file: AudioFile) -> None:
+        if self.status != 'active':
+            raise SessionNotActiveError(f"Session is not active: {self.session_id}")  # ✅ 도메인 언어
+        if not audio_file.is_ready:
+            raise AudioFileNotReadyError(f"Audio file not ready: {audio_file.id}")  # ✅ 도메인 언어
+        # ...
+```
+
+❌ Bad
+
+```python
+class Session:
+    def __init__(self, session_id: str, status: str):
+        self.session_id = session_id  # ❌ 일단 만들고
+        self.status = status
+
+    def process_audio(self, audio_file: AudioFile) -> None:
+        if self.status != 'active':  # ❌ 나중에 여기저기서 if로 방어
+            return  # ❌ 상태 공간이 폭발하고 버그가 숨어듦
+        # ...
+```
+
+## 7) Django/DRF 통합 패턴
+
+### 7.1 APIView 공통 Exception Handler 패턴
+
+✅ Good
+
+```python
+# middleware.py or base_view.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.request import Request
+import logging
+
+from .exceptions import (
+    AppError,
+    NotFoundError,
+    ConflictError,
+    PermissionDeniedError,
+    ValidationError,
+    ExternalServiceError,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class BaseAPIView(APIView):
+    """Base APIView with common exception handling."""
+
+    def handle_exception(self, exc: Exception) -> Response:
+        """Handle exceptions and map to HTTP responses."""
+        if isinstance(exc, NotFoundError):
+            logger.warning(f"Resource not found: {exc}")
+            return Response({"detail": exc.detail}, status=exc.status_code)
+        elif isinstance(exc, ConflictError):
+            logger.warning(f"Conflict: {exc}")
+            return Response({"detail": exc.detail}, status=exc.status_code)
+        elif isinstance(exc, PermissionDeniedError):
+            logger.warning(f"Permission denied: {exc}")
+            return Response({"detail": exc.detail}, status=exc.status_code)
+        elif isinstance(exc, ValidationError):
+            return Response({"detail": exc.detail}, status=exc.status_code)
+        elif isinstance(exc, ExternalServiceError):
+            logger.error(f"External service error: {exc}")
+            return Response({"detail": exc.detail}, status=exc.status_code)
+        elif isinstance(exc, AppError):
+            logger.error(f"Application error: {exc}")
+            return Response({"detail": exc.detail}, status=exc.status_code)
+        else:
+            logger.exception(f"Unexpected error: {exc}")
+            return Response({"detail": "Internal server error"}, status=500)
+
+
+# 사용 예시
+class UserCreateAPIView(BaseAPIView):
+    def post(self, request: Request) -> Response:
+        user = UserService.create(request.data)  # ✅ 예외는 BaseAPIView에서 처리
+        return Response(UserSerializer(user).data, status=201)
+```
+
+### 7.2 ServiceError 구조와의 통합
+
+기존 코드에서 `ServiceError`를 사용하는 경우, 위 예외 계층으로 점진적 마이그레이션:
+
+```python
+# 기존
+class ServiceError(Exception):
+    def __init__(self, message: str, status_code: int = 500):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
+
+# 새로운 구조로 마이그레이션 (호환성 유지)
+class ServiceError(AppError):
+    """Legacy ServiceError for backward compatibility."""
+    def __init__(self, message: str, status_code: int = 500):
+        super().__init__(message, status_code=status_code)
+```
+
+## 8) 실전 체크리스트
+
+코드 작성 후 다음을 확인하세요:
+
+- [ ] `except Exception:`을 썼다면 "왜 필요한지" 설명 가능해야 함 (대부분 불필요)
+- [ ] 예외를 잡았으면 **복구/변환/로깅+재던짐** 중 하나는 했는가?
+- [ ] 새 예외로 바꿀 때 `raise ... from e`로 원인을 보존했는가?
+- [ ] 메시지에 "무엇/어느 ID/어떤 상태"가 포함되는가?
+- [ ] 민감정보(API Key/토큰/개인정보)가 메시지/로그에 포함되지 않는가?
+- [ ] 레이어 경계에서만 변환(HTTP/재시도 정책)하고 내부는 타입 유지했는가?
+- [ ] 반환값(None/False)로 실패를 표현하지 않았는가?
+- [ ] try 범위를 최소화했는가?
+- [ ] 정상 흐름 분기를 예외로 남발하지 않았는가?
+- [ ] 예외 타입이 도메인 언어(ubiquitous language)를 사용하는가?
+- [ ] Repository는 ORM 예외를 RepositoryError로 변환하고 원인을 보존하는가?
+- [ ] Service는 의미 있는 도메인 예외만 올리는가?
+- [ ] Controller는 서비스 예외를 HTTP로 매핑하고 로깅은 1회만 하는가?
+
+## 9) 한 줄 결론
+
+**서비스 내부에서는 "의미 있는 예외 타입"을 유지하고, 컨트롤러/워커 같은 경계에서만 표현(HTTP/재시도/로그)으로 번역하십시오.**
+
+이게 자바스러운 계약 기반 예외 처리의 핵심이고, 클린코드/OO 설계와도 정확히 맞습니다.
