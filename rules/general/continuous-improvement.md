@@ -1,7 +1,7 @@
 ---
+trigger: manual
 description: Evidence-driven rule and code improvement — TDD, pattern capture in 3+ files, security/perf regression tests
 globs: "**/*"
-trigger: always_on
 ---
 
 ## Continuous Improvement (TDD Evidence)
