@@ -1,5 +1,5 @@
 ---
-trigger: manual
+trigger: always_on
 description: Evidence-driven rule and code improvement — TDD, pattern capture in 3+ files, security/perf regression tests
 globs: "**/*"
 ---

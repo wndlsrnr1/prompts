@@ -1,7 +1,7 @@
 ---
+trigger: always_on
 description: Continuously improve Cursor rules from code patterns — triggers, analysis, add/modify/deprecate; follow cursor_rules for format
 globs: "**/*"
-alwaysApply: true
 ---
 
 - **Rule Improvement Triggers:**
